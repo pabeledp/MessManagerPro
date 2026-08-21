@@ -1,9 +1,8 @@
 {
   "appId": "com.messmanager.pro",
   "appName": "MessManager PRO",
-  "webDir": "public",
+  "webDir": "out",
   "server": {
-    "androidScheme": "https",
-    "cleartext": true
+    "androidScheme": "https"
   }
 }

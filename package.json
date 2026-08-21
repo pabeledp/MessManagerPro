@@ -8,7 +8,7 @@
     "start": "next start",
     "cap:sync": "npx cap sync",
     "cap:open": "npx cap open android",
-    "build:android": "npm run build && npx cap sync android"
+    "build:android": "mv src/app/api src/app/_api_server 2>/dev/null || true; BUILD_TARGET=mobile npx next build; mv src/app/_api_server src/app/api 2>/dev/null || true; npx cap sync android"
   },
   "dependencies": {
     "autoprefixer": "^10.4.19",
