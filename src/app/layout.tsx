@@ -1,6 +1,7 @@
 import './globals.css';
 import React from 'react';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { StatusBarInit } from '@/components/StatusBarInit';
 
 const getBaseUrl = (): string => {
   if (process.env.NEXTAUTH_URL && process.env.NEXTAUTH_URL.length > 0) {
@@ -51,6 +52,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.cdnfonts.com" />
       </head>
       <body className="antialiased font-sans selection:bg-emerald-500/20 selection:text-emerald-900">
+        <StatusBarInit />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

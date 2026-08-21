@@ -11,6 +11,7 @@
     "build:android": "mv src/app/api src/app/_api_server 2>/dev/null || true; BUILD_TARGET=mobile npx next build; mv src/app/_api_server src/app/api 2>/dev/null || true; npx cap sync android"
   },
   "dependencies": {
+    "@capacitor/status-bar": "^8.0.3",
     "autoprefixer": "^10.4.19",
     "framer-motion": "^11.2.10",
     "lucide-react": "^0.395.0",
