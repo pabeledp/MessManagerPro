@@ -1,0 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.cdnfonts.com/css/creato-display');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-color: #F8FAFC;
+  --font-bangla: 'Hind Siliguri', sans-serif;
+  --font-english: 'Creato Display', sans-serif;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #F8FAFC;
+  color: #0F172A;
+  /* Ultra-subtle, clean background grid */
+  background-image: 
+    linear-gradient(to right, rgba(226, 232, 240, 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 232, 240, 0.4) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-attachment: fixed;
+  font-family: 'Creato Display', 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  touch-action: manipulation;
+}
+
+/* Specific Font Classes */
+.font-bangla {
+  font-family: 'Hind Siliguri', sans-serif !important;
+}
+
+.font-english {
+  font-family: 'Creato Display', sans-serif !important;
+}
+
+/* =========================================================================
+   CLEAN, REFINED NEU-GLASS SYSTEM (SOFT, NOT OVER-EXPOSED)
+========================================================================= */
+
+.glass-panel, .neu-card {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+@media (hover: hover) {
+  .glass-panel:hover, .neu-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -2px rgba(0, 0, 0, 0.04);
+    border-color: rgba(203, 213, 225, 0.9);
+  }
+}
+
+.neu-tile {
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+@media (hover: hover) {
+  .neu-tile:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.05);
+    border-color: rgba(203, 213, 225, 0.9);
+  }
+}
+
+.neu-tile:active {
+  transform: scale(0.97);
+}
+
+.glass-panel-mobile-bottom {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 -4px 16px -2px rgba(0, 0, 0, 0.04);
+}
+
+.glass-input, .neu-input {
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
+  font-family: 'Creato Display', 'Hind Siliguri', sans-serif;
+}
+
+.glass-input:focus, .neu-input:focus {
+  background: #FFFFFF;
+  border-color: #10B981;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+/* Safe Area Insets for Android / iOS Bottom Bars */
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 5.5rem);
+}
+
+/* Clean Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(203, 213, 225, 0.7);
+  border-radius: 9999px;
+}

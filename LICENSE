@@ -1,6 +1,10 @@
 MIT License
 
+<<<<<<< HEAD
 Copyright (c) 2026 A M Pabel
+=======
+Copyright (c) 2026 MessManager PRO
+>>>>>>> 1fb63e3 (feat: initial commit for MessManager PRO with Android APK, multi-mess, rent tracker, and bilingual support)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

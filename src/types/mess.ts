@@ -1,0 +1,167 @@
+export type Language = 'bn' | 'en';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  activeMessId: string;
+  language?: Language;
+}
+
+export interface Mess {
+  id: string;
+  name: string;
+  address?: string;
+  createdAt: string;
+  monthlyHouseRent?: number; // Total house rent for the mess
+}
+
+export interface Member {
+  id: string;
+  messId: string;
+  name: string;
+  phone?: string;
+  deposit: number;
+  monthlyRent?: number; // Default allocated rent for this member
+}
+
+export interface BazarEntry {
+  id: string;
+  messId: string;
+  spentByMemberId: string;
+  amount: number;
+  category: string;
+  date: string;
+  itemsNote: string;
+}
+
+export interface MealLog {
+  date: string;
+  messId: string;
+  memberId: string;
+  breakfast: number;
+  lunch: number;
+  dinner: number;
+}
+
+export interface RentPayment {
+  id: string;
+  messId: string;
+  memberId: string;
+  month: string; // Format 'YYYY-MM', e.g. '2026-08'
+  expectedAmount: number;
+  paidAmount: number;
+  status: 'paid' | 'unpaid' | 'partial';
+  paidAt?: string;
+  paymentMethod?: string; // 'Cash' | 'bKash' | 'Nagad' | 'Bank Transfer'
+  note?: string;
+}
+
+export interface MessData {
+  userProfile: UserProfile;
+  messes: Mess[];
+  activeMessId: string;
+  members: Member[];
+  bazars: BazarEntry[];
+  meals: MealLog[];
+  rentPayments: RentPayment[];
+  calculationMode?: 'meal_rate' | 'equal_split';
+  language?: Language;
+}
+
+export type SyncStatus = 'synced' | 'syncing' | 'offline' | 'error';
+
+export interface MemberCalculation {
+  id: string;
+  messId: string;
+  name: string;
+  phone?: string;
+  deposit: number;
+  monthlyRent?: number;
+  totalMeals: number;
+  cost: number;
+  balance: number; // positive = paid more (will get refund), negative = paid less (owes/due)
+  status: 'will_get' | 'owes' | 'settled';
+  diffFromAvg: number;
+  avatarColor: string;
+}
+
+export interface RentSummary {
+  selectedMonth: string;
+  totalExpectedRent: number;
+  totalPaidRent: number;
+  totalDueRent: number;
+  paidCount: number;
+  unpaidCount: number;
+  memberRentStatus: {
+    member: Member;
+    expectedAmount: number;
+    paidAmount: number;
+    dueAmount: number;
+    status: 'paid' | 'unpaid' | 'partial';
+    paidAt?: string;
+    paymentMethod?: string;
+    note?: string;
+  }[];
+}
+
+export interface MessCalculations {
+  activeMess: Mess | undefined;
+  activeMembers: Member[];
+  activeBazars: BazarEntry[];
+  calculationMode: 'meal_rate' | 'equal_split';
+  effectiveMode: 'meal_rate' | 'equal_split';
+  totalExpense: number;
+  totalDeposit: number;
+  fundLeft: number;
+  totalMeals: number;
+  mealRate: number;
+  avgExpensePerHead: number; // মাথাপিছু গড় খরচ
+  avgDepositPerHead: number; // মাথাপিছু গড় জমা
+  totalDue: number;          // মোট কম দেওয়া / বাকি টাকা
+  totalSurplus: number;      // মোট বেশি দেওয়া টাকা
+  paidMoreMembers: MemberCalculation[]; // যারা বেশি দিয়েছে
+  paidLessMembers: MemberCalculation[]; // যারা কম দিয়েছে
+  memberCalculations: MemberCalculation[];
+}
+
+export interface MessState extends MessData {
+  isSetupComplete: boolean;
+  syncStatus: SyncStatus;
+  lastSyncedAt: string | null;
+  calculationMode: 'meal_rate' | 'equal_split';
+  language: Language;
+  
+  // Actions
+  setLanguage: (lang: Language) => void;
+  setCalculationMode: (mode: 'meal_rate' | 'equal_split') => void;
+  setActiveMessId: (messId: string) => void;
+  createMess: (name: string, address?: string, initialMemberNames?: string[]) => string;
+  updateMess: (messId: string, name: string, address?: string, monthlyHouseRent?: number) => void;
+  deleteMess: (messId: string) => void;
+  updateUserProfile: (profile: Partial<UserProfile>) => void;
+  addMember: (messId: string, name: string, deposit?: number, phone?: string, monthlyRent?: number) => void;
+  removeMember: (memberId: string) => void;
+  addBazar: (entry: Omit<BazarEntry, 'id'>) => void;
+  deleteBazar: (id: string) => void;
+  updateMemberDeposit: (memberId: string, amount: number) => void;
+  incrementMeal: (date: string, messId: string, memberId: string, slot: 'breakfast' | 'lunch' | 'dinner', delta: number) => void;
+  
+  // House Rent Actions
+  updateRentPayment: (
+    messId: string,
+    memberId: string,
+    month: string,
+    paidAmount: number,
+    expectedAmount?: number,
+    paymentMethod?: string,
+    note?: string
+  ) => void;
+  setMemberMonthlyRent: (memberId: string, rentAmount: number) => void;
+
+  hydrateFromRemote: (remoteData: Partial<MessData>) => void;
+  setSyncStatus: (status: SyncStatus) => void;
+  resetMess: () => void;
+}
