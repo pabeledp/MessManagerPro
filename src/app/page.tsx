@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { useMessStore, useMessCalculations } from '@/store/useMessStore';
@@ -15,6 +15,7 @@ import { AddDepositModal } from '@/components/AddDepositModal';
 import { MealEntrySheet } from '@/components/MealEntrySheet';
 import { ManageMembersModal } from '@/components/ManageMembersModal';
 import { CreateMessModal } from '@/components/CreateMessModal';
+import { MessSwitcherModal } from '@/components/MessSwitcherModal';
 import { RentPaymentModal } from '@/components/RentPaymentModal';
 import { ProfileModal } from '@/components/ProfileModal';
 import { restoreFromDrive, queueDriveSync } from '@/lib/driveSync';
@@ -27,7 +28,6 @@ import {
   Users,
   Building2,
   ChevronDown,
-  Check,
   Scale,
   Wallet,
   Home,
@@ -42,7 +42,6 @@ export default function Dashboard() {
     userProfile,
     messes,
     activeMessId,
-    setActiveMessId,
     members,
     bazars,
     meals,
@@ -70,11 +69,8 @@ export default function Dashboard() {
 
   const t = translations[language || 'bn'];
 
-  // Mess dropdown state inside main page card
-  const [isMessDropdownOpen, setIsMessDropdownOpen] = useState(false);
-  const messDropdownRef = useRef<HTMLDivElement>(null);
-
   // Modals state
+  const [isMessSwitcherOpen, setIsMessSwitcherOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isCreateMessModalOpen, setIsCreateMessModalOpen] = useState(false);
   const [isManageMembersModalOpen, setIsManageMembersModalOpen] = useState(false);
@@ -90,17 +86,6 @@ export default function Dashboard() {
   // Mount effect
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  // Click outside listener for mess dropdown
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (messDropdownRef.current && !messDropdownRef.current.contains(e.target as Node)) {
-        setIsMessDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Sync to Drive trigger
@@ -170,89 +155,26 @@ export default function Dashboard() {
         {/* CARD 1: ACTIVE MESS CARD */}
         <div className="glass-panel rounded-2xl p-4 sm:p-5 relative bg-white border border-slate-200/80 shadow-sm">
           <div className="flex items-center justify-between gap-2 mb-3">
-            {/* Active Mess with Dropdown Selector */}
-            <div className="relative" ref={messDropdownRef}>
-              <button
-                onClick={() => setIsMessDropdownOpen((prev) => !prev)}
-                className="flex items-center gap-2.5 text-left group p-1 -ml-1 rounded-xl hover:bg-slate-50 transition-colors"
-              >
-                <div className="w-8 h-8 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center font-bold shadow-sm shrink-0">
-                  <Building2 className="w-4 h-4" />
+            {/* Active Mess with Modal Selector Button */}
+            <button
+              onClick={() => setIsMessSwitcherOpen(true)}
+              className="flex items-center gap-2.5 text-left group p-1 -ml-1 rounded-xl hover:bg-slate-50 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center font-bold shadow-sm shrink-0">
+                <Building2 className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1">
+                  <h1 className="text-sm sm:text-base font-black text-slate-800 tracking-tight font-bangla leading-tight">
+                    {activeMess?.name || t.selectMess}
+                  </h1>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 transition-colors" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-1">
-                    <h1 className="text-sm sm:text-base font-black text-slate-800 tracking-tight font-bangla leading-tight">
-                      {activeMess?.name || t.selectMess}
-                    </h1>
-                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-150 ${isMessDropdownOpen ? 'rotate-180 text-slate-700' : ''}`} />
-                  </div>
-                  {activeMess?.address && (
-                    <p className="text-[10px] text-slate-400 font-bangla">{activeMess.address}</p>
-                  )}
-                </div>
-              </button>
-
-              {/* Mess Switcher Dropdown Menu */}
-              <AnimatePresence>
-                {isMessDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute left-0 mt-1.5 w-68 bg-white rounded-2xl p-2 shadow-xl border border-slate-200 z-50 overflow-hidden"
-                  >
-                    <div className="px-3 py-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100 font-bangla">
-                      {t.switchMess} ({messes.length})
-                    </div>
-
-                    <div className="max-h-56 overflow-y-auto py-1 space-y-1">
-                      {messes.map((m) => {
-                        const isActive = m.id === activeMessId;
-                        return (
-                          <button
-                            key={m.id}
-                            onClick={() => {
-                              setActiveMessId(m.id);
-                              setIsMessDropdownOpen(false);
-                            }}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-left transition-all ${
-                              isActive ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-50'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              <Building2 className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
-                              <div className="truncate">
-                                <p className="truncate font-bangla font-bold">{m.name}</p>
-                                {m.address && (
-                                   <p className={`text-[9px] font-normal truncate font-bangla ${isActive ? 'text-slate-300' : 'text-slate-400'}`}>
-                                    {m.address}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            {isActive && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <div className="pt-1.5 border-t border-slate-100 mt-1">
-                      <button
-                        onClick={() => {
-                          setIsMessDropdownOpen(false);
-                          setIsCreateMessModalOpen(true);
-                        }}
-                        className="w-full flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors font-bangla"
-                      >
-                        <Plus className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>{t.createNewMess}</span>
-                      </button>
-                    </div>
-                  </motion.div>
+                {activeMess?.address && (
+                  <p className="text-[10px] text-slate-400 font-bangla">{activeMess.address}</p>
                 )}
-              </AnimatePresence>
-            </div>
+              </div>
+            </button>
 
             <button
               onClick={() => setIsManageMembersModalOpen(true)}
@@ -300,9 +222,7 @@ export default function Dashboard() {
             <div>
               <div className="flex items-center gap-1 text-slate-500 mb-0.5">
                 <Wallet className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-xs font-bold font-bangla">
-                  {language === 'bn' ? 'মেসের বর্তমান ক্যাশ ব্যালেন্স (জমা - খরচ)' : 'Mess Fund Balance (Deposit - Expense)'}
-                </span>
+                <span className="text-xs font-bold font-bangla">{t.totalFundLeft}</span>
               </div>
               <p className={`text-2xl sm:text-3xl font-black font-english tracking-tight ${fundLeft >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
                 ৳{fundLeft.toLocaleString()}
@@ -338,7 +258,7 @@ export default function Dashboard() {
 
             <div className="p-2.5 rounded-xl bg-indigo-50/60 border border-indigo-100">
               <span className="text-[10px] font-bold text-indigo-700 block font-bangla">
-                {calculationMode === 'meal_rate' ? t.mealRate : (language === 'bn' ? 'মাথাপিছু খরচ' : 'Per-Head Cost')}
+                {calculationMode === 'meal_rate' ? t.mealRate : t.perHeadAvgExpense}
               </span>
               <p className="text-sm sm:text-base font-black text-indigo-700 font-english mt-0.5">
                 ৳{calculationMode === 'meal_rate' ? mealRate.toFixed(2) : avgExpensePerHead.toFixed(0)}
@@ -399,7 +319,7 @@ export default function Dashboard() {
               <Home className="w-4 h-4" />
             </div>
             <div>
-              <p className="font-bold text-xs sm:text-sm font-bangla leading-tight">{language === 'bn' ? 'বাড়ি ভাড়া' : 'House Rent'}</p>
+              <p className="font-bold text-xs sm:text-sm font-bangla leading-tight">{t.rentTrackerTitle}</p>
               <span className="text-[9px] text-slate-400 font-bangla">{t.rentUpdateBtn}</span>
             </div>
           </button>
@@ -505,6 +425,12 @@ export default function Dashboard() {
         </section>
 
         {/* Modals & Bottom Sheets */}
+        <MessSwitcherModal
+          isOpen={isMessSwitcherOpen}
+          onClose={() => setIsMessSwitcherOpen(false)}
+          onOpenCreateMess={() => setIsCreateMessModalOpen(true)}
+        />
+
         <ProfileModal
           isOpen={isProfileModalOpen}
           onClose={() => setIsProfileModalOpen(false)}
