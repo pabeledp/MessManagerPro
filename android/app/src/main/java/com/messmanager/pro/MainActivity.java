@@ -14,7 +14,7 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // Ensure webview fits below system bars
+        // Ensure webview fits below system status bar
         WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         
         // Apply status bar insets as padding on the content view
@@ -27,11 +27,11 @@ public class MainActivity extends BridgeActivity {
             });
         }
         
-        // Ensure status bar icons (time, battery, network) are dark and visible
+        // Force white icons for time, battery, network against dark #0F172A bar
         WindowInsetsControllerCompat controller = 
             WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         if (controller != null) {
-            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightStatusBars(false);
         }
     }
 }

@@ -9,7 +9,8 @@ export const StatusBarInit: React.FC = () => {
         const { StatusBar, Style } = await import('@capacitor/status-bar');
         // Prevent webview from drawing under the system status bar
         await StatusBar.setOverlaysWebView({ overlay: false });
-        await StatusBar.setBackgroundColor({ color: '#F1F5F9' });
+        // Set solid dark background (#0F172A) so white time/text is 100% visible on every phone
+        await StatusBar.setBackgroundColor({ color: '#0F172A' });
         await StatusBar.setStyle({ style: Style.Dark });
       } catch {
         // Fallback silently if running in pure web browser
