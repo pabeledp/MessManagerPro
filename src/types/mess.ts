@@ -15,7 +15,7 @@ export interface Mess {
   name: string;
   address?: string;
   createdAt: string;
-  monthlyHouseRent?: number; // Total house rent for the mess
+  monthlyHouseRent?: number;
 }
 
 export interface Member {
@@ -24,7 +24,7 @@ export interface Member {
   name: string;
   phone?: string;
   deposit: number;
-  monthlyRent?: number; // Default allocated rent for this member
+  monthlyRent?: number;
 }
 
 export interface BazarEntry {
@@ -55,7 +55,7 @@ export interface RentPayment {
   paidAmount: number;
   status: 'paid' | 'unpaid' | 'partial';
   paidAt?: string;
-  paymentMethod?: string; // 'Cash' | 'bKash' | 'Nagad' | 'Bank Transfer'
+  paymentMethod?: string;
   note?: string;
 }
 
@@ -82,7 +82,7 @@ export interface MemberCalculation {
   monthlyRent?: number;
   totalMeals: number;
   cost: number;
-  balance: number; // positive = paid more (will get refund), negative = paid less (owes/due)
+  balance: number;
   status: 'will_get' | 'owes' | 'settled';
   diffFromAvg: number;
   avatarColor: string;
@@ -118,12 +118,12 @@ export interface MessCalculations {
   fundLeft: number;
   totalMeals: number;
   mealRate: number;
-  avgExpensePerHead: number; // মাথাপিছু গড় খরচ
-  avgDepositPerHead: number; // মাথাপিছু গড় জমা
-  totalDue: number;          // মোট কম দেওয়া / বাকি টাকা
-  totalSurplus: number;      // মোট বেশি দেওয়া টাকা
-  paidMoreMembers: MemberCalculation[]; // যারা বেশি দিয়েছে
-  paidLessMembers: MemberCalculation[]; // যারা কম দিয়েছে
+  avgExpensePerHead: number;
+  avgDepositPerHead: number;
+  totalDue: number;
+  totalSurplus: number;
+  paidMoreMembers: MemberCalculation[];
+  paidLessMembers: MemberCalculation[];
   memberCalculations: MemberCalculation[];
 }
 
@@ -163,5 +163,5 @@ export interface MessState extends MessData {
 
   hydrateFromRemote: (remoteData: Partial<MessData>) => void;
   setSyncStatus: (status: SyncStatus) => void;
-  resetMess: () => void;
+  resetAllData: () => void;
 }

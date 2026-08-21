@@ -19,7 +19,7 @@
 body {
   background-color: #F8FAFC;
   color: #0F172A;
-  /* Ultra-subtle, clean background grid */
+  /* Ultra-subtle background grid */
   background-image: 
     linear-gradient(to right, rgba(226, 232, 240, 0.4) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(226, 232, 240, 0.4) 1px, transparent 1px);
@@ -47,7 +47,7 @@ body {
 ========================================================================= */
 
 .glass-panel, .neu-card {
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(226, 232, 240, 0.8);
@@ -105,7 +105,11 @@ body {
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
 }
 
-/* Safe Area Insets for Android / iOS Bottom Bars */
+/* Safe Area Insets for Android / iOS Status Bar & Bottom Navigation */
+.pt-safe-top {
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
+}
+
 .pb-safe {
   padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 5.5rem);
 }

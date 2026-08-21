@@ -21,126 +21,36 @@ const AVATAR_COLORS = [
   'bg-violet-500', 'bg-rose-500', 'bg-amber-500', 'bg-teal-500'
 ];
 
-const DEFAULT_MESS_ID = 'mess_default_1';
-const CURRENT_MONTH = new Date().toISOString().slice(0, 7); // e.g. '2026-08'
-const PREV_MONTH = (() => {
-  const d = new Date();
-  d.setMonth(d.getMonth() - 1);
-  return d.toISOString().slice(0, 7);
-})();
+const DEFAULT_MESS_ID = 'mess_1';
 
 export const useMessStore = create<MessState>()(
   persist(
     (set, get) => ({
       userProfile: {
         id: 'user_1',
-        name: 'Mess Manager',
+        name: 'মেস ম্যানেজার',
         email: '',
         phone: '',
-        address: 'Dhanmondi, Dhaka',
+        address: '',
         activeMessId: DEFAULT_MESS_ID,
         language: 'bn',
       },
       messes: [
         {
           id: DEFAULT_MESS_ID,
-          name: 'Dhanmondi Flat',
-          address: 'Road 8/A, Dhanmondi',
-          monthlyHouseRent: 18000,
+          name: 'আমার মেস',
+          address: '',
+          monthlyHouseRent: 0,
           createdAt: new Date().toISOString(),
         },
       ],
       activeMessId: DEFAULT_MESS_ID,
       calculationMode: 'equal_split',
       language: 'bn',
-      members: [
-        { id: 'mem_1', messId: DEFAULT_MESS_ID, name: 'Rahim', phone: '01711000001', deposit: 2783, monthlyRent: 6000 },
-        { id: 'mem_2', messId: DEFAULT_MESS_ID, name: 'Karim', phone: '01811000002', deposit: 740, monthlyRent: 6000 },
-        { id: 'mem_3', messId: DEFAULT_MESS_ID, name: 'Shakil', phone: '01911000003', deposit: 0, monthlyRent: 6000 },
-      ],
-      bazars: [
-        {
-          id: 'baz_1',
-          messId: DEFAULT_MESS_ID,
-          spentByMemberId: 'mem_1',
-          amount: 3523,
-          category: '🛒 Groceries',
-          date: new Date().toISOString().split('T')[0],
-          itemsNote: 'Monthly Bazar & Groceries',
-        },
-      ],
-      meals: [],
-      rentPayments: [
-        // Running Month (e.g. 2026-08)
-        {
-          id: 'rent_cur_1',
-          messId: DEFAULT_MESS_ID,
-          memberId: 'mem_1',
-          month: CURRENT_MONTH,
-          expectedAmount: 6000,
-          paidAmount: 6000,
-          status: 'paid',
-          paidAt: `${CURRENT_MONTH}-05`,
-          paymentMethod: 'bKash',
-          note: 'Paid on time',
-        },
-        {
-          id: 'rent_cur_2',
-          messId: DEFAULT_MESS_ID,
-          memberId: 'mem_2',
-          month: CURRENT_MONTH,
-          expectedAmount: 6000,
-          paidAmount: 6000,
-          status: 'paid',
-          paidAt: `${CURRENT_MONTH}-06`,
-          paymentMethod: 'Cash',
-          note: 'Paid via cash',
-        },
-        {
-          id: 'rent_cur_3',
-          messId: DEFAULT_MESS_ID,
-          memberId: 'mem_3',
-          month: CURRENT_MONTH,
-          expectedAmount: 6000,
-          paidAmount: 0,
-          status: 'unpaid',
-          note: 'Will pay next week',
-        },
-        // Previous Month (e.g. 2026-07)
-        {
-          id: 'rent_prev_1',
-          messId: DEFAULT_MESS_ID,
-          memberId: 'mem_1',
-          month: PREV_MONTH,
-          expectedAmount: 6000,
-          paidAmount: 6000,
-          status: 'paid',
-          paidAt: `${PREV_MONTH}-04`,
-          paymentMethod: 'bKash',
-        },
-        {
-          id: 'rent_prev_2',
-          messId: DEFAULT_MESS_ID,
-          memberId: 'mem_2',
-          month: PREV_MONTH,
-          expectedAmount: 6000,
-          paidAmount: 6000,
-          status: 'paid',
-          paidAt: `${PREV_MONTH}-05`,
-          paymentMethod: 'Cash',
-        },
-        {
-          id: 'rent_prev_3',
-          messId: DEFAULT_MESS_ID,
-          memberId: 'mem_3',
-          month: PREV_MONTH,
-          expectedAmount: 6000,
-          paidAmount: 6000,
-          status: 'paid',
-          paidAt: `${PREV_MONTH}-08`,
-          paymentMethod: 'Nagad',
-        },
-      ],
+      members: [], // CLEAN ZERO: No default members
+      bazars: [],  // CLEAN ZERO: No default bazars
+      meals: [],   // CLEAN ZERO: No default meals
+      rentPayments: [], // CLEAN ZERO: No default rent
       isSetupComplete: true,
       syncStatus: 'offline',
       lastSyncedAt: null,
@@ -163,13 +73,13 @@ export const useMessStore = create<MessState>()(
         }));
       },
 
-      createMess: (name: string, address?: string, initialMemberNames: string[] = ['Rahim', 'Karim']) => {
+      createMess: (name: string, address?: string, initialMemberNames: string[] = []) => {
         const newMessId = `mess_${Date.now()}`;
         const newMess: Mess = {
           id: newMessId,
-          name: name.trim(),
+          name: name.trim() || 'নতুন মেস',
           address: address?.trim() || '',
-          monthlyHouseRent: 12000,
+          monthlyHouseRent: 0,
           createdAt: new Date().toISOString(),
         };
 
@@ -180,7 +90,7 @@ export const useMessStore = create<MessState>()(
             messId: newMessId,
             name: n.trim(),
             deposit: 0,
-            monthlyRent: 6000,
+            monthlyRent: 0,
           }));
 
         set(state => ({
@@ -234,7 +144,7 @@ export const useMessStore = create<MessState>()(
         }));
       },
 
-      addMember: (messId: string, name: string, deposit = 0, phone?: string, monthlyRent = 6000) => {
+      addMember: (messId: string, name: string, deposit = 0, phone?: string, monthlyRent = 0) => {
         if (!name.trim()) return;
         const newMember: Member = {
           id: `mem_${Date.now()}`,
@@ -310,7 +220,7 @@ export const useMessStore = create<MessState>()(
           const member = state.members.find(m => m.id === memberId);
           const targetExpected = expectedAmount !== undefined
             ? expectedAmount
-            : (existingIndex > -1 ? state.rentPayments[existingIndex].expectedAmount : (member?.monthlyRent || 6000));
+            : (existingIndex > -1 ? state.rentPayments[existingIndex].expectedAmount : (member?.monthlyRent || 0));
 
           let status: 'paid' | 'unpaid' | 'partial' = 'unpaid';
           if (paidAmount >= targetExpected && targetExpected > 0) {
@@ -381,15 +291,26 @@ export const useMessStore = create<MessState>()(
         });
       },
 
-      resetMess: () => {
+      resetAllData: () => {
         set({
-          messes: [{ id: DEFAULT_MESS_ID, name: 'Default Mess', createdAt: new Date().toISOString() }],
+          userProfile: {
+            id: 'user_1',
+            name: 'মেস ম্যানেজার',
+            email: '',
+            phone: '',
+            address: '',
+            activeMessId: DEFAULT_MESS_ID,
+            language: 'bn',
+          },
+          messes: [{ id: DEFAULT_MESS_ID, name: 'আমার মেস', address: '', monthlyHouseRent: 0, createdAt: new Date().toISOString() }],
           activeMessId: DEFAULT_MESS_ID,
           members: [],
           bazars: [],
           meals: [],
           rentPayments: [],
           syncStatus: 'offline',
+          lastSyncedAt: null,
+          calculationMode: 'equal_split',
         });
       },
     }),
@@ -400,7 +321,7 @@ export const useMessStore = create<MessState>()(
   )
 );
 
-// Derived Isolated Calculations for Active Mess ONLY
+// Derived Isolated Calculations
 export const useMessCalculations = (): MessCalculations => {
   const { messes, activeMessId, members, bazars, meals, calculationMode } = useMessStore();
 
@@ -460,7 +381,7 @@ export const useMessCalculations = (): MessCalculations => {
       name: member.name,
       phone: member.phone,
       deposit: Number(member.deposit || 0),
-      monthlyRent: member.monthlyRent || 6000,
+      monthlyRent: member.monthlyRent || 0,
       totalMeals: memberTotalMeals,
       cost,
       balance,
@@ -494,7 +415,7 @@ export const useMessCalculations = (): MessCalculations => {
   };
 };
 
-// House Rent Calculations for specific month
+// House Rent Calculations
 export const useRentSummary = (month: string): RentSummary => {
   const { messes, activeMessId, members, rentPayments } = useMessStore();
 
@@ -512,7 +433,7 @@ export const useRentSummary = (month: string): RentSummary => {
       r => r.messId === activeId && r.memberId === member.id && r.month === month
     );
 
-    const expectedAmount = payment ? payment.expectedAmount : (member.monthlyRent || 6000);
+    const expectedAmount = payment ? payment.expectedAmount : (member.monthlyRent || 0);
     const paidAmount = payment ? payment.paidAmount : 0;
     const dueAmount = Math.max(0, expectedAmount - paidAmount);
     
