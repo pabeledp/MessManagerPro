@@ -35,6 +35,7 @@ export interface BazarEntry {
   category: string;
   date: string;
   itemsNote: string;
+  addedToDeposit?: boolean;
 }
 
 export interface MealLog {
@@ -144,8 +145,8 @@ export interface MessState extends MessData {
   updateUserProfile: (profile: Partial<UserProfile>) => void;
   addMember: (messId: string, name: string, deposit?: number, phone?: string, monthlyRent?: number) => void;
   removeMember: (memberId: string) => void;
-  addBazar: (entry: Omit<BazarEntry, 'id'>) => void;
-  deleteBazar: (id: string) => void;
+  addBazar: (entry: Omit<BazarEntry, 'id'>, addToMemberDeposit?: boolean) => void;
+  deleteBazar: (id: string, deductFromMemberDeposit?: boolean) => void;
   updateMemberDeposit: (memberId: string, amount: number) => void;
   incrementMeal: (date: string, messId: string, memberId: string, slot: 'breakfast' | 'lunch' | 'dinner', delta: number) => void;
   

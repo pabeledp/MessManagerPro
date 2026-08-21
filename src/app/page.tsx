@@ -31,6 +31,7 @@ import {
   Scale,
   Wallet,
   Home,
+  UserPlus,
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -63,6 +64,7 @@ export default function Dashboard() {
     totalDeposit,
     fundLeft,
     mealRate,
+    avgExpensePerHead,
     memberCalculations,
   } = useMessCalculations();
 
@@ -163,7 +165,7 @@ export default function Dashboard() {
         onManualSync={triggerSync}
       />
 
-      <main className="max-w-lg md:max-w-5xl mx-auto px-3 sm:px-6 space-y-3.5 sm:space-y-5">
+      <main className="max-w-lg md:max-w-5xl mx-auto px-3 sm:px-6 space-y-3.5 sm:space-y-4">
         
         {/* CARD 1: ACTIVE MESS CARD */}
         <div className="glass-panel rounded-2xl p-4 sm:p-5 relative bg-white border border-slate-200/80 shadow-sm">
@@ -223,7 +225,7 @@ export default function Dashboard() {
                               <div className="truncate">
                                 <p className="truncate font-bangla font-bold">{m.name}</p>
                                 {m.address && (
-                                  <p className={`text-[9px] font-normal truncate font-bangla ${isActive ? 'text-slate-300' : 'text-slate-400'}`}>
+                                   <p className={`text-[9px] font-normal truncate font-bangla ${isActive ? 'text-slate-300' : 'text-slate-400'}`}>
                                     {m.address}
                                   </p>
                                 )}
@@ -291,14 +293,16 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* CARD 2: FINANCIAL WALLET 3D SNAPSHOT CARD */}
+        {/* CARD 2: FINANCIAL WALLET HERO CARD */}
         <div className="glass-panel rounded-2xl p-4 sm:p-5 bg-white border border-slate-200/80 shadow-sm">
           {/* Main Balance Hero */}
           <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-100">
             <div>
               <div className="flex items-center gap-1 text-slate-500 mb-0.5">
                 <Wallet className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-xs font-bold font-bangla">{t.totalFundLeft}</span>
+                <span className="text-xs font-bold font-bangla">
+                  {language === 'bn' ? 'মেসের বর্তমান ক্যাশ ব্যালেন্স (জমা - খরচ)' : 'Mess Fund Balance (Deposit - Expense)'}
+                </span>
               </div>
               <p className={`text-2xl sm:text-3xl font-black font-english tracking-tight ${fundLeft >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
                 ৳{fundLeft.toLocaleString()}
@@ -332,10 +336,12 @@ export default function Dashboard() {
               </p>
             </div>
 
-            <div className="p-2.5 rounded-xl bg-sky-50/60 border border-sky-100">
-              <span className="text-[10px] font-bold text-sky-700 block font-bangla">{t.mealRate}</span>
-              <p className="text-sm sm:text-base font-black text-sky-700 font-english mt-0.5">
-                ৳{mealRate.toFixed(2)}
+            <div className="p-2.5 rounded-xl bg-indigo-50/60 border border-indigo-100">
+              <span className="text-[10px] font-bold text-indigo-700 block font-bangla">
+                {calculationMode === 'meal_rate' ? t.mealRate : (language === 'bn' ? 'মাথাপিছু খরচ' : 'Per-Head Cost')}
+              </span>
+              <p className="text-sm sm:text-base font-black text-indigo-700 font-english mt-0.5">
+                ৳{calculationMode === 'meal_rate' ? mealRate.toFixed(2) : avgExpensePerHead.toFixed(0)}
               </p>
             </div>
           </div>
@@ -399,7 +405,7 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* CARD 4: FAIR SHARE & AVERAGE COMPARISON CARD */}
+        {/* CARD 4: FAIR SHARE & PER-HEAD BALANCE CARD */}
         <AverageShareCard />
 
         {/* CARD 5: DEDICATED HOUSE RENT TRACKER SECTION */}
@@ -420,8 +426,15 @@ export default function Dashboard() {
           </div>
 
           {activeMembers.length === 0 ? (
-            <div className="bg-white rounded-2xl p-6 text-center text-slate-400 text-xs font-bangla border border-slate-200/80">
-              {t.noMembersYet}
+            <div className="bg-white rounded-2xl p-6 text-center text-slate-400 text-xs font-bangla border border-slate-200/80 space-y-2">
+              <p>{t.noMembersYet}</p>
+              <button
+                onClick={() => setIsManageMembersModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm"
+              >
+                <UserPlus className="w-3.5 h-3.5 text-emerald-400" />
+                <span>+ {t.addNewMember}</span>
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -466,13 +479,18 @@ export default function Dashboard() {
                         </p>
                         <span className="text-[10px] text-slate-400 font-bangla">
                           {b.category} • <span className="font-english">{b.date}</span>
+                          {b.addedToDeposit && (
+                            <span className="ml-1 text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded text-[9px] border border-emerald-100">
+                              জমার সাথে যুক্ত
+                            </span>
+                          )}
                         </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="font-black text-slate-800 font-english">৳{b.amount}</span>
                       <button
-                        onClick={() => deleteBazar(b.id)}
+                        onClick={() => deleteBazar(b.id, true)}
                         className="text-slate-300 hover:text-rose-500 p-1 rounded-lg transition-colors"
                         title={t.deleteAction}
                       >

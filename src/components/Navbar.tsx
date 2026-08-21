@@ -44,7 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 w-full mb-3 sm:mb-5 pt-7 sm:pt-4">
+    <header className="sticky top-0 z-40 w-full mb-3 sm:mb-4 pt-3 sm:pt-4">
       <div
         className="glass-panel mx-auto max-w-lg md:max-w-5xl px-3.5 sm:px-5 py-2.5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between gap-2 bg-white"
       >

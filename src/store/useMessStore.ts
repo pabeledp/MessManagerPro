@@ -47,10 +47,10 @@ export const useMessStore = create<MessState>()(
       activeMessId: DEFAULT_MESS_ID,
       calculationMode: 'equal_split',
       language: 'bn',
-      members: [], // CLEAN ZERO: No default members
-      bazars: [],  // CLEAN ZERO: No default bazars
-      meals: [],   // CLEAN ZERO: No default meals
-      rentPayments: [], // CLEAN ZERO: No default rent
+      members: [],
+      bazars: [],
+      meals: [],
+      rentPayments: [],
       isSetupComplete: true,
       syncStatus: 'offline',
       lastSyncedAt: null,
@@ -166,13 +166,44 @@ export const useMessStore = create<MessState>()(
         }));
       },
 
-      addBazar: (entry) => {
-        const newBazar: BazarEntry = { ...entry, id: `baz_${Date.now()}` };
-        set(state => ({ bazars: [newBazar, ...state.bazars] }));
+      addBazar: (entry, addToMemberDeposit = true) => {
+        const newBazar: BazarEntry = {
+          ...entry,
+          id: `baz_${Date.now()}`,
+          addedToDeposit: addToMemberDeposit,
+        };
+        set(state => {
+          let updatedMembers = state.members;
+          if (addToMemberDeposit) {
+            updatedMembers = state.members.map(m =>
+              m.id === entry.spentByMemberId
+                ? { ...m, deposit: (Number(m.deposit) || 0) + Number(entry.amount || 0) }
+                : m
+            );
+          }
+          return {
+            bazars: [newBazar, ...state.bazars],
+            members: updatedMembers,
+          };
+        });
       },
 
-      deleteBazar: (id: string) => {
-        set(state => ({ bazars: state.bazars.filter(b => b.id !== id) }));
+      deleteBazar: (id: string, deductFromMemberDeposit = true) => {
+        set(state => {
+          const target = state.bazars.find(b => b.id === id);
+          let updatedMembers = state.members;
+          if (target && deductFromMemberDeposit && target.addedToDeposit) {
+            updatedMembers = state.members.map(m =>
+              m.id === target.spentByMemberId
+                ? { ...m, deposit: Math.max(0, (Number(m.deposit) || 0) - Number(target.amount || 0)) }
+                : m
+            );
+          }
+          return {
+            bazars: state.bazars.filter(b => b.id !== id),
+            members: updatedMembers,
+          };
+        });
       },
 
       updateMemberDeposit: (memberId: string, amount: number) => {
@@ -343,12 +374,12 @@ export const useMessCalculations = (): MessCalculations => {
 
   const mealRate = totalMeals > 0 ? totalExpense / totalMeals : 0;
 
-  // Average per Head calculations
+  // Average per Head calculations (Equal Share of Bazar Expense)
   const memberCount = activeMembers.length;
   const avgExpensePerHead = memberCount > 0 ? totalExpense / memberCount : 0;
   const avgDepositPerHead = memberCount > 0 ? totalDeposit / memberCount : 0;
 
-  // Determine effective calculation mode
+  // By default, if calculationMode is equal_split OR meals are not logged, use equal_split!
   const effectiveMode = (calculationMode === 'meal_rate' && totalMeals > 0) ? 'meal_rate' : 'equal_split';
 
   let totalDue = 0;

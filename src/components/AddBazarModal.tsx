@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMessStore, useMessCalculations } from '@/store/useMessStore';
 import { translations } from '@/lib/translations';
-import { X, ShoppingCart } from 'lucide-react';
+import { X, ShoppingCart, CheckSquare, Square, Info } from 'lucide-react';
 
 interface AddBazarModalProps {
   isOpen: boolean;
@@ -13,13 +13,13 @@ interface AddBazarModalProps {
 }
 
 const CATEGORIES = [
-  '🛒 Groceries',
-  '🐟 Fish & Meat',
-  '🥬 Vegetables',
-  '🛢️ Spices & Oil',
-  '☕ Snacks & Tea',
-  '⚡ Utilities',
-  '📦 Other',
+  '🛒 নিত্যপ্রয়োজনীয় বাজার (Groceries)',
+  '🐟 মাছ ও মাংস (Fish & Meat)',
+  '🥬 শাক-সবজি (Vegetables)',
+  '🛢️ তেল ও মশলা (Spices & Oil)',
+  '☕ চা ও নাস্তা (Snacks & Tea)',
+  '⚡ গ্যাস ও অন্যান্য (Utilities)',
+  '📦 অন্যান্য (Other)',
 ];
 
 export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, onSuccess }) => {
@@ -29,9 +29,10 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
 
   const [spentByMemberId, setSpentByMemberId] = useState('');
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('🛒 Groceries');
+  const [category, setCategory] = useState(CATEGORIES[0]);
   const [itemsNote, setItemsNote] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [addToDeposit, setAddToDeposit] = useState(true);
 
   useEffect(() => {
     if (activeMembers.length > 0 && !spentByMemberId) {
@@ -44,14 +45,17 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
     const numAmount = parseFloat(amount);
     if (!spentByMemberId || isNaN(numAmount) || numAmount <= 0 || !activeMessId) return;
 
-    addBazar({
-      messId: activeMessId,
-      spentByMemberId,
-      amount: numAmount,
-      category,
-      itemsNote: itemsNote.trim() || (language === 'bn' ? 'দৈনিক বাজার' : 'Daily Bazar'),
-      date,
-    });
+    addBazar(
+      {
+        messId: activeMessId,
+        spentByMemberId,
+        amount: numAmount,
+        category,
+        itemsNote: itemsNote.trim() || (language === 'bn' ? 'দৈনিক বাজার' : 'Daily Bazar'),
+        date,
+      },
+      addToDeposit
+    );
 
     setAmount('');
     setItemsNote('');
@@ -76,35 +80,37 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="relative w-full max-w-md glass-panel rounded-t-[32px] sm:rounded-3xl p-6 shadow-2xl z-10 border border-white/90 max-h-[90vh] overflow-y-auto"
-            style={{
-              boxShadow: '0 25px 40px -15px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 1)',
-            }}
+            className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl z-10 border border-slate-200/80 max-h-[90vh] overflow-y-auto"
           >
-            <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-4 sm:hidden" />
+            <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-3.5 sm:hidden" />
 
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200/60 mb-5">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600">
-                  <ShoppingCart className="w-5 h-5" />
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-amber-50 text-amber-600 font-bold">
+                  <ShoppingCart className="w-4 h-4" />
                 </div>
-                <h2 className="text-xl font-extrabold text-slate-800 font-bangla">{t.modalAddBazarTitle}</h2>
+                <div>
+                  <h2 className="text-base sm:text-lg font-black text-slate-800 font-bangla">{t.modalAddBazarTitle}</h2>
+                  <p className="text-[10px] text-slate-400 font-bangla">{language === 'bn' ? 'দৈনিক বাজার খরচের হিসাব' : 'Daily Bazar Expense Entry'}</p>
+                </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">{t.spentBy}</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">
+                  {language === 'bn' ? 'কে বাজার করেছেন?' : 'Who did the bazar?'}
+                </label>
                 <select
                   value={spentByMemberId}
                   onChange={(e) => setSpentByMemberId(e.target.value)}
-                  className="w-full glass-input rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 font-bangla"
                   required
                 >
                   {activeMembers.map((m) => (
@@ -117,66 +123,93 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">
-                  {t.amount}
+                  {language === 'bn' ? 'বাজারের টাকার পরিমাণ (৳)' : 'Bazar Amount (৳)'}
                 </label>
                 <input
                   type="number"
                   placeholder="e.g. 650"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full glass-input rounded-2xl px-4 py-3.5 text-base text-slate-800 font-extrabold font-english"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 font-black font-english outline-none focus:border-emerald-500"
                   required
                   min="1"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">{t.category}</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full glass-input rounded-2xl px-4 py-3.5 text-sm text-slate-800"
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Automatic Deposit Credit Option */}
+              <button
+                type="button"
+                onClick={() => setAddToDeposit(!addToDeposit)}
+                className={`w-full p-2.5 rounded-xl border flex items-center gap-2 text-left transition-all ${
+                  addToDeposit
+                    ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
+                    : 'bg-slate-50 border-slate-200 text-slate-600'
+                }`}
+              >
+                {addToDeposit ? (
+                  <CheckSquare className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <Square className="w-4 h-4 text-slate-400 shrink-0" />
+                )}
+                <div>
+                  <p className="text-xs font-bold font-bangla">
+                    {language === 'bn' ? 'মেম্বার নিজের পকেট থেকে দিয়েছেন (জমার সাথে যোগ হবে)' : 'Paid from member pocket (Add to personal deposit)'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 font-bangla">
+                    {language === 'bn' ? 'মেম্বারের মোট জমার পরিমাণ স্বয়ংক্রিয়ভাবে বৃদ্ধি পাবে' : 'Automatically increases the member total contribution'}
+                  </p>
+                </div>
+              </button>
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">{t.itemsNote}</label>
                 <input
                   type="text"
-                  placeholder="e.g. Fish, rice & vegetables"
+                  placeholder="e.g. মাছ, আলু, পিঁয়াজ ও তেল"
                   value={itemsNote}
                   onChange={(e) => setItemsNote(e.target.value)}
-                  className="w-full glass-input rounded-2xl px-4 py-3.5 text-sm text-slate-800"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-emerald-500 font-bangla"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">{t.date}</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full glass-input rounded-2xl px-4 py-3.5 text-sm text-slate-800 font-english"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">{t.category}</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-bangla"
+                  >
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">{t.date}</label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-english"
+                  />
+                </div>
               </div>
 
-              <div className="pt-3 flex items-center justify-end gap-3">
+              <div className="pt-2 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-3 rounded-2xl text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-colors font-bangla"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-colors font-bangla"
                 >
                   {t.cancel}
                 </button>
                 <button
                   type="submit"
-                  className="px-7 py-3.5 rounded-2xl text-sm font-extrabold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-xl shadow-slate-900/15 transition-all font-bangla"
+                  className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all font-bangla"
                 >
                   {t.save}
                 </button>
