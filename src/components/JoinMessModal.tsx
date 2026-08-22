@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMessStore } from '@/store/useMessStore';
+import { supabase } from '@/lib/supabase';
 import { translations } from '@/lib/translations';
-import { X, LogIn, KeyRound, CheckCircle2, AlertCircle, Sparkles, Building2 } from 'lucide-react';
+import { X, LogIn, KeyRound, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 
 interface JoinMessModalProps {
   isOpen: boolean;
@@ -13,29 +14,80 @@ interface JoinMessModalProps {
 }
 
 export const JoinMessModal: React.FC<JoinMessModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  const { joinMessByCode, userProfile, language } = useMessStore();
+  const { userProfile, joinMessByCode, language } = useMessStore();
   const t = translations[language || 'bn'];
 
   const [messCode, setMessCode] = useState('');
   const [userName, setUserName] = useState(userProfile.name || '');
+  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [welcomeMess, setWelcomeMess] = useState<{ name: string; message: string } | null>(null);
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setWelcomeMess(null);
 
-    if (!messCode.trim()) {
+    const cleanCode = messCode.trim().toUpperCase();
+    if (!cleanCode) {
       setErrorMsg('দয়া করে মেস কোডটি লিখুন।');
       return;
     }
 
-    const result = joinMessByCode(messCode.trim(), userName.trim());
-    if (result.success) {
+    setLoading(true);
+
+    try {
+      // 1. Direct Supabase Query: SELECT * FROM messes WHERE code = inputCode
+      let query = supabase.from('messes').select('*');
+      if (cleanCode.startsWith('MESS-')) {
+        query = query.eq('code', cleanCode);
+      } else {
+        query = query.or(`code.eq.${cleanCode},id.eq.${cleanCode}`);
+      }
+
+      const { data: messRow, error: messErr } = await query.single();
+
+      if (!messErr && messRow) {
+        const messId = messRow.id;
+        const nameToUse = userName.trim() || userProfile.name || 'নতুন মেম্বার';
+
+        // 2. Insert user into members table with role = 'MEMBER'
+        await supabase.from('members').insert([{
+          mess_id: messId,
+          name: nameToUse,
+          role: 'MEMBER',
+          deposit: 0,
+        }]);
+
+        // 3. Hydrate local Zustand store
+        const result = await joinMessByCode(cleanCode, nameToUse);
+        setLoading(false);
+
+        setWelcomeMess({
+          name: messRow.name || 'মেস',
+          message: `সফলভাবে "${messRow.name}" মেসে যোগ দিয়েছেন!`,
+        });
+
+        setTimeout(() => {
+          onSuccess?.();
+          onClose();
+          setWelcomeMess(null);
+          setMessCode('');
+        }, 1600);
+        return;
+      }
+    } catch (err) {
+      console.warn('Supabase join query notice:', err);
+    }
+
+    // Fallback to local / sync search
+    const localResult = await joinMessByCode(cleanCode, userName.trim());
+    setLoading(false);
+
+    if (localResult.success) {
       setWelcomeMess({
-        name: result.messName || 'মেস',
-        message: result.message,
+        name: localResult.messName || 'মেস',
+        message: localResult.message,
       });
       setTimeout(() => {
         onSuccess?.();
@@ -44,7 +96,7 @@ export const JoinMessModal: React.FC<JoinMessModalProps> = ({ isOpen, onClose, o
         setMessCode('');
       }, 1600);
     } else {
-      setErrorMsg(result.message);
+      setErrorMsg('ভুল মেস কোড! কোনো মেস খুঁজে পাওয়া যায়নি।');
     }
   };
 
@@ -166,10 +218,11 @@ export const JoinMessModal: React.FC<JoinMessModalProps> = ({ isOpen, onClose, o
                   </button>
                   <button
                     type="submit"
+                    disabled={loading}
                     className="px-6 py-2.5 rounded-xl text-xs font-extrabold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-md transition-all font-bangla cursor-pointer flex items-center gap-1.5"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{language === 'bn' ? 'মেসে যুক্ত হোন' : 'Join Mess'}</span>
+                    <span>{loading ? 'অনুসন্ধান চলছে...' : (language === 'bn' ? 'মেসে যুক্ত হোন' : 'Join Mess')}</span>
                   </button>
                 </div>
               </form>

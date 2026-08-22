@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMessStore } from '@/store/useMessStore';
+import { useMessStore, generateMessCode } from '@/store/useMessStore';
+import { supabase } from '@/lib/supabase';
 import { translations } from '@/lib/translations';
 import { X, Building2, MapPin, Users, Sparkles } from 'lucide-react';
 
@@ -13,7 +14,7 @@ interface CreateMessModalProps {
 }
 
 export const CreateMessModal: React.FC<CreateMessModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  const { createMess, language } = useMessStore();
+  const { createMess, userProfile, language } = useMessStore();
   const t = translations[language || 'bn'];
 
   const [name, setName] = useState('');
@@ -26,7 +27,47 @@ export const CreateMessModal: React.FC<CreateMessModalProps> = ({ isOpen, onClos
     if (!name.trim()) return;
 
     setLoading(true);
+    const code = generateMessCode();
+    const currentUserName = userProfile.name || 'ম্যানেজার';
     const memberList = initialMembers.split(',').map((n) => n.trim()).filter(Boolean);
+
+    try {
+      // 1. Direct INSERT query into Supabase messes table
+      const { data: messData, error: messErr } = await supabase
+        .from('messes')
+        .insert([{ code, name: name.trim() }])
+        .select();
+
+      if (messData && messData.length > 0) {
+        const createdMessId = messData[0].id;
+        
+        // 2. Insert creator into members table as 'MANAGER'
+        await supabase
+          .from('members')
+          .insert([{
+            mess_id: createdMessId,
+            name: currentUserName,
+            role: 'MANAGER',
+            deposit: 0,
+          }]);
+
+        // Insert initial other members if provided
+        if (memberList.length > 0) {
+          await supabase.from('members').insert(
+            memberList.map((mName) => ({
+              mess_id: createdMessId,
+              name: mName,
+              role: 'MEMBER',
+              deposit: 0,
+            }))
+          );
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase create notice:', err);
+    }
+
+    // 3. Hydrate local Zustand store with new mess
     await createMess(name.trim(), address.trim(), memberList);
 
     setLoading(false);
