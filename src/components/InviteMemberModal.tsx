@@ -13,7 +13,7 @@ import {
   MessageCircle,
   KeyRound,
   ShieldCheck,
-  Users,
+  RotateCw,
 } from 'lucide-react';
 
 interface InviteMemberModalProps {
@@ -23,7 +23,7 @@ interface InviteMemberModalProps {
 
 export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, onClose }) => {
   const { activeMess, activeMembers } = useMessCalculations();
-  const { language } = useMessStore();
+  const { language, updateMess } = useMessStore();
   const t = translations[language || 'bn'];
 
   const [copiedCode, setCopiedCode] = useState(false);
@@ -61,6 +61,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
             className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
           />
@@ -69,7 +70,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
             initial={{ y: '100%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 350, mass: 0.8 }}
             className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl z-10 border border-slate-200/80 max-h-[92vh] overflow-y-auto flex flex-col"
           >
             <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-3 sm:hidden" />
@@ -82,7 +83,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
                 </div>
                 <div>
                   <h2 className="text-base sm:text-lg font-black text-slate-800 font-bangla">
-                    {language === 'bn' ? 'মেস ইনভাইটেশন ও মেম্বার জয়েন' : 'Mess Invitation & Code'}
+                    {language === 'bn' ? 'মেস ইনভাইটেশন ও মেম্বার কোড' : 'Mess Invitation & Code'}
                   </h2>
                   <p className="text-[10px] text-slate-400 font-bangla">
                     {activeMess.name} ({activeMembers.length} {language === 'bn' ? 'জন মেম্বার' : 'members'})
@@ -91,7 +92,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -189,9 +190,8 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ isOpen, on
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                 <span>মেম্বাররা কীভাবে জয়েন করবেন:</span>
               </div>
-              <p>১. মেম্বাররা অ্যাপ ইনস্টল করে <b>"মেসে জয়েন করুন"</b> অপশনে যাবেন।</p>
-              <p>২. এই <b>{messCode}</b> কোডটি প্রবেশ করালেই আপনার মেসের সাথে লাইভ কানেক্ট হয়ে যাবে।</p>
-              <p>৩. মেম্বাররা শুধু লাইভ হিসাব দেখতে পারবে (Read-only); ম্যানেজার হিসেবে আপনি এন্ট্রি ও এডিট করবেন।</p>
+              <p>১. মেম্বাররা অ্যাপে <b>"মেস পরিবর্তন > কোড দিয়ে যোগ দিন"</b>-এ যাবেন।</p>
+              <p>২. এই <b>{messCode}</b> কোডটি দিলেই সাথে সাথে মেসের সাথে লাইভ যুক্ত হয়ে যাবে।</p>
             </div>
 
             <div className="pt-3 border-t border-slate-100 mt-3 text-right">
