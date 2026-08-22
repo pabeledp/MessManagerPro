@@ -93,11 +93,11 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl z-10 border border-slate-200/80 max-h-[90vh] overflow-y-auto"
+            className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl z-10 border border-slate-200/80 max-h-[92vh] overflow-y-auto"
           >
-            <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-3.5 sm:hidden" />
+            <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-3 sm:hidden" />
 
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-xl bg-amber-50 text-amber-600 font-bold">
                   <ShoppingCart className="w-4 h-4" />
@@ -115,28 +115,46 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3.5">
-              {/* Custom Member Dropdown */}
-              <CustomDropdown
-                label={language === 'bn' ? 'কে বাজার করেছেন?' : 'Who did the bazar?'}
-                options={memberOptions}
-                selectedValue={spentByMemberId}
-                onChange={setSpentByMemberId}
-                placeholder="মেম্বার নির্বাচন করুন"
-              />
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {/* Row 1: Who Spent + Date Side-by-Side on Desktop/Mobile for zero scroll */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <CustomDropdown
+                  label={language === 'bn' ? 'কে বাজার করেছেন?' : 'Who did the bazar?'}
+                  options={memberOptions}
+                  selectedValue={spentByMemberId}
+                  onChange={setSpentByMemberId}
+                  placeholder="মেম্বার নির্বাচন করুন"
+                />
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">
-                  {language === 'bn' ? 'বাজারের টাকার পরিমাণ (৳)' : 'Bazar Amount (৳)'}
-                </label>
-                <input
-                  type="number"
-                  placeholder="e.g. 650"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 font-black font-english outline-none focus:border-emerald-500"
-                  required
-                  min="1"
+                <CustomDatePicker
+                  label={t.date}
+                  value={date}
+                  onChange={setDate}
+                />
+              </div>
+
+              {/* Row 2: Amount & Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">
+                    {language === 'bn' ? 'বাজারের পরিমাণ (৳)' : 'Amount (৳)'}
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 650"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 font-black font-english outline-none focus:border-emerald-500"
+                    required
+                    min="1"
+                  />
+                </div>
+
+                <CustomDropdown
+                  label={t.category}
+                  options={categoryOptions}
+                  selectedValue={category}
+                  onChange={setCategory}
                 />
               </div>
 
@@ -157,11 +175,12 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
                 )}
                 <div>
                   <p className="text-xs font-bold font-bangla">
-                    {language === 'bn' ? 'মেম্বার নিজের পকেট থেকে দিয়েছেন (জমার সাথে যুক্ত হবে)' : 'Paid from member pocket (Add to personal deposit)'}
+                    {language === 'bn' ? 'মেম্বার নিজের পকেট থেকে দিয়েছেন (জমার সাথে যুক্ত হবে)' : 'Paid from member pocket (Add to deposit)'}
                   </p>
                 </div>
               </button>
 
+              {/* Items Note */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">{t.itemsNote}</label>
                 <input
@@ -170,23 +189,6 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
                   value={itemsNote}
                   onChange={(e) => setItemsNote(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-emerald-500 font-bangla"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {/* Custom Category Dropdown */}
-                <CustomDropdown
-                  label={t.category}
-                  options={categoryOptions}
-                  selectedValue={category}
-                  onChange={setCategory}
-                />
-
-                {/* In-Theme Custom Date Picker */}
-                <CustomDatePicker
-                  label={t.date}
-                  value={date}
-                  onChange={setDate}
                 />
               </div>
 

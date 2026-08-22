@@ -32,6 +32,8 @@ import {
   Wallet,
   Home,
   UserPlus,
+  ChevronRight,
+  ChevronUp,
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -78,6 +80,7 @@ export default function Dashboard() {
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isMealSheetOpen, setIsMealSheetOpen] = useState(false);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
+  const [showAllBazars, setShowAllBazars] = useState(false);
   
   const [selectedMemberForDeposit, setSelectedMemberForDeposit] = useState<string | undefined>();
   const [selectedMemberForRent, setSelectedMemberForRent] = useState<string | undefined>();
@@ -140,6 +143,8 @@ export default function Dashboard() {
     if (month) setSelectedRentMonth(month);
     setIsRentModalOpen(true);
   };
+
+  const displayedBazars = showAllBazars ? activeBazars : activeBazars.slice(0, 5);
 
   return (
     <div className="min-h-screen text-slate-800 pb-28 sm:pb-16 font-sans">
@@ -369,7 +374,7 @@ export default function Dashboard() {
           )}
         </section>
 
-        {/* CARD 7: RECENT BAZAR ACTIVITY CARD */}
+        {/* CARD 7: RECENT BAZAR ACTIVITY CARD (Max 5 items with 'More' toggle) */}
         <section className="space-y-2.5">
           <div className="flex items-center justify-between px-1">
             <h3 className="text-sm font-black text-slate-800 font-bangla">{t.recentBazar}</h3>
@@ -382,19 +387,19 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="bg-white rounded-2xl p-3 space-y-1.5 border border-slate-200/80">
-              {activeBazars.map((b) => {
+              {displayedBazars.map((b) => {
                 const spender = activeMembers.find((m) => m.id === b.spentByMemberId);
                 return (
                   <div
                     key={b.id}
                     className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-all text-xs"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 truncate">
                       <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
                         <ShoppingCart className="w-3.5 h-3.5" />
                       </div>
-                      <div>
-                        <p className="font-bold text-slate-800 font-bangla">
+                      <div className="truncate">
+                        <p className="font-bold text-slate-800 font-bangla truncate">
                           {spender?.name || t.members} — {b.itemsNote}
                         </p>
                         <span className="text-[10px] text-slate-400 font-bangla">
@@ -407,11 +412,11 @@ export default function Dashboard() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <span className="font-black text-slate-800 font-english">৳{b.amount}</span>
                       <button
                         onClick={() => deleteBazar(b.id, true)}
-                        className="text-slate-300 hover:text-rose-500 p-1 rounded-lg transition-colors"
+                        className="text-slate-300 hover:text-rose-500 p-1 rounded-lg transition-colors cursor-pointer"
                         title={t.deleteAction}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -420,6 +425,24 @@ export default function Dashboard() {
                   </div>
                 );
               })}
+
+              {/* Show More / Show Less Button if > 5 entries */}
+              {activeBazars.length > 5 && (
+                <div className="pt-2 border-t border-slate-100 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllBazars(!showAllBazars)}
+                    className="text-xs font-extrabold text-emerald-700 hover:text-emerald-800 flex items-center justify-center gap-1 mx-auto py-1 px-3 rounded-lg hover:bg-emerald-50 transition-colors font-bangla cursor-pointer"
+                  >
+                    <span>
+                      {showAllBazars
+                        ? (language === 'bn' ? 'কম দেখুন (প্রথম ৫টি)' : 'Show Less')
+                        : (language === 'bn' ? `আরও ${activeBazars.length - 5}টি বাজার দেখুন (More)` : `View All (${activeBazars.length})`)}
+                    </span>
+                    {showAllBazars ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </section>

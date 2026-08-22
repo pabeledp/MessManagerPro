@@ -54,7 +54,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-left flex items-center justify-between transition-all outline-none"
+        className="w-full bg-slate-50 hover:bg-slate-100/80 border border-slate-200 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-left flex items-center justify-between transition-all outline-none cursor-pointer"
       >
         <div className="flex items-center gap-2 truncate">
           {selectedOption?.icon && <span className="shrink-0">{selectedOption.icon}</span>}
@@ -76,15 +76,15 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
         />
       </button>
 
-      {/* Floating Options Menu */}
+      {/* Floating Options Menu - Compact & Non-Intrusive */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 6, scale: 0.98 }}
+            initial={{ opacity: 0, y: 4, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 6, scale: 0.98 }}
-            transition={{ duration: 0.15 }}
-            className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden max-h-56 overflow-y-auto p-1.5 space-y-1"
+            exit={{ opacity: 0, y: 4, scale: 0.98 }}
+            transition={{ duration: 0.12 }}
+            className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden max-h-44 overflow-y-auto p-1.5 space-y-0.5"
           >
             {options.map((option) => {
               const isSelected = option.value === selectedValue;
@@ -96,7 +96,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                     onChange(option.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition-all ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-slate-900 text-white font-bold shadow-xs'
                       : 'hover:bg-slate-50 text-slate-700 font-semibold'
