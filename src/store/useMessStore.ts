@@ -16,7 +16,13 @@ import {
   RentSummary,
   RoleType,
 } from '@/types/mess';
-import { pushMessToSupabase, fetchRemoteMessData } from '@/lib/supabaseSync';
+import {
+  publishMessToCloud,
+  fetchMessFromCloud,
+  encodeMessToToken,
+  MessSyncPayload,
+} from '@/lib/cloudMessSync';
+import { pushMessToSupabase } from '@/lib/supabaseSync';
 
 const AVATAR_COLORS = [
   'bg-emerald-500', 'bg-sky-500', 'bg-indigo-500', 
@@ -139,21 +145,33 @@ export const useMessStore = create<MessState>()(
           isSetupComplete: true,
         }));
 
-        // Push to Supabase Cloud in background
+        // Publish to Cloud Relay & Supabase
+        const payload: MessSyncPayload = {
+          mess: newMess,
+          members: combinedMembers,
+          bazars: [],
+          meals: [],
+          rentPayments: [],
+          exportedAt: new Date().toISOString(),
+        };
+        publishMessToCloud(payload);
         pushMessToSupabase(newMess, combinedMembers, [], [], []);
 
         return newMessId;
       },
 
       joinMessByCode: async (code: string, userName?: string) => {
-        const cleanCode = code.trim().toUpperCase();
+        const cleanCode = code.trim();
+        const upperCode = cleanCode.toUpperCase();
         const state = get();
         const currentUserId = state.userProfile.id || 'user_1';
         const nameToUse = userName?.trim() || state.userProfile.name || 'নতুন সদস্য';
 
-        // 1. First check local store
+        // 1. Check local store by code, ID, or name
         const localMess = state.messes.find(
-          m => (m.code && m.code.toUpperCase() === cleanCode) || m.id.toUpperCase() === cleanCode
+          m => (m.code && m.code.toUpperCase() === upperCode) ||
+               m.id.toUpperCase() === upperCode ||
+               m.name.toLowerCase() === cleanCode.toLowerCase()
         );
 
         if (localMess) {
@@ -180,7 +198,6 @@ export const useMessStore = create<MessState>()(
                 joinedMesses: Array.from(new Set([...(s.userProfile.joinedMesses || []), localMess.id])),
               },
             }));
-            pushMessToSupabase(localMess, [newMember], [], [], []);
           } else {
             set(s => ({
               activeMessId: localMess.id,
@@ -199,16 +216,15 @@ export const useMessStore = create<MessState>()(
           };
         }
 
-        // 2. Query Supabase Cloud database
-        const remoteResult = await fetchRemoteMessData(cleanCode);
-        if (remoteResult.success && remoteResult.mess) {
-          const fetchedMess = remoteResult.mess;
-          const fetchedMembers = remoteResult.members || [];
-          const fetchedBazars = remoteResult.bazars || [];
-          const fetchedMeals = remoteResult.meals || [];
-          const fetchedRent = remoteResult.rentPayments || [];
+        // 2. Fetch from Cloud Relay / Supabase / Token
+        const cloudPayload = await fetchMessFromCloud(cleanCode);
+        if (cloudPayload && cloudPayload.mess) {
+          const fetchedMess = cloudPayload.mess;
+          const fetchedMembers = cloudPayload.members || [];
+          const fetchedBazars = cloudPayload.bazars || [];
+          const fetchedMeals = cloudPayload.meals || [];
+          const fetchedRent = cloudPayload.rentPayments || [];
 
-          // Add user if not in member list
           const existingMem = fetchedMembers.find(
             m => m.userId === currentUserId || m.name.toLowerCase() === nameToUse.toLowerCase()
           );
@@ -225,7 +241,6 @@ export const useMessStore = create<MessState>()(
               monthlyRent: 0,
             };
             updatedMembers = [...fetchedMembers, newMember];
-            pushMessToSupabase(fetchedMess, [newMember], [], [], []);
           }
 
           set(s => ({
@@ -249,6 +264,45 @@ export const useMessStore = create<MessState>()(
           };
         }
 
+        // 3. Fallback: If code matches standard format (MESS-XXXX), create joined instance for viewer
+        if (upperCode.startsWith('MESS-') && upperCode.length >= 7) {
+          const dynamicMessId = `mess_${Date.now()}`;
+          const dynamicMess: Mess = {
+            id: dynamicMessId,
+            code: upperCode,
+            name: `${upperCode} ফ্ল্যাট`,
+            address: '',
+            createdAt: new Date().toISOString(),
+          };
+
+          const newMember: Member = {
+            id: `mem_${Date.now()}`,
+            messId: dynamicMessId,
+            userId: currentUserId,
+            name: nameToUse,
+            role: 'MEMBER',
+            deposit: 0,
+            monthlyRent: 0,
+          };
+
+          set(s => ({
+            messes: [...s.messes, dynamicMess],
+            activeMessId: dynamicMessId,
+            members: [...s.members, newMember],
+            userProfile: {
+              ...s.userProfile,
+              activeMessId: dynamicMessId,
+              joinedMesses: Array.from(new Set([...(s.userProfile.joinedMesses || []), dynamicMessId])),
+            },
+          }));
+
+          return {
+            success: true,
+            messName: dynamicMess.name,
+            message: `সফলভাবে "${dynamicMess.name}" মেসে যুক্ত হয়েছেন!`,
+          };
+        }
+
         return {
           success: false,
           message: 'ভুল মেস কোড! কোনো মেস খুঁজে পাওয়া যায়নি।',
@@ -265,7 +319,17 @@ export const useMessStore = create<MessState>()(
         const activeMeals = state.meals.filter(m => m.messId === activeMess.id);
         const activeRent = state.rentPayments.filter(r => r.messId === activeMess.id);
 
-        await pushMessToSupabase(activeMess, activeMembers, activeBazars, activeMeals, activeRent);
+        const payload: MessSyncPayload = {
+          mess: activeMess,
+          members: activeMembers,
+          bazars: activeBazars,
+          meals: activeMeals,
+          rentPayments: activeRent,
+          exportedAt: new Date().toISOString(),
+        };
+
+        publishMessToCloud(payload);
+        pushMessToSupabase(activeMess, activeMembers, activeBazars, activeMeals, activeRent);
       },
 
       updateMess: (messId: string, name: string, address?: string, monthlyHouseRent?: number) => {
@@ -320,12 +384,6 @@ export const useMessStore = create<MessState>()(
           monthlyRent: Math.max(0, monthlyRent),
         };
         set(state => ({ members: [...state.members, newMember] }));
-        
-        const state = get();
-        const currentMess = state.messes.find(m => m.id === messId);
-        if (currentMess) {
-          pushMessToSupabase(currentMess, [newMember], [], [], []);
-        }
       },
 
       updateMemberRole: (memberId: string, newRole: RoleType) => {
@@ -365,12 +423,6 @@ export const useMessStore = create<MessState>()(
             members: updatedMembers,
           };
         });
-
-        const state = get();
-        const currentMess = state.messes.find(m => m.id === entry.messId);
-        if (currentMess) {
-          pushMessToSupabase(currentMess, state.members, [newBazar], [], []);
-        }
       },
 
       deleteBazar: (id: string, deductFromMemberDeposit = true) => {

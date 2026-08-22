@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMessStore } from '@/store/useMessStore';
-import { supabase } from '@/lib/supabase';
 import { translations } from '@/lib/translations';
 import { X, LogIn, KeyRound, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 
@@ -28,7 +27,7 @@ export const JoinMessModal: React.FC<JoinMessModalProps> = ({ isOpen, onClose, o
     setErrorMsg('');
     setWelcomeMess(null);
 
-    const cleanCode = messCode.trim().toUpperCase();
+    const cleanCode = messCode.trim();
     if (!cleanCode) {
       setErrorMsg('দয়া করে মেস কোডটি লিখুন।');
       return;
@@ -36,59 +35,15 @@ export const JoinMessModal: React.FC<JoinMessModalProps> = ({ isOpen, onClose, o
 
     setLoading(true);
 
-    try {
-      // 1. Direct Supabase Query: SELECT * FROM messes WHERE code = inputCode
-      let query = supabase.from('messes').select('*');
-      if (cleanCode.startsWith('MESS-')) {
-        query = query.eq('code', cleanCode);
-      } else {
-        query = query.or(`code.eq.${cleanCode},id.eq.${cleanCode}`);
-      }
-
-      const { data: messRow, error: messErr } = await query.single();
-
-      if (!messErr && messRow) {
-        const messId = messRow.id;
-        const nameToUse = userName.trim() || userProfile.name || 'নতুন মেম্বার';
-
-        // 2. Insert user into members table with role = 'MEMBER'
-        await supabase.from('members').insert([{
-          mess_id: messId,
-          name: nameToUse,
-          role: 'MEMBER',
-          deposit: 0,
-        }]);
-
-        // 3. Hydrate local Zustand store
-        const result = await joinMessByCode(cleanCode, nameToUse);
-        setLoading(false);
-
-        setWelcomeMess({
-          name: messRow.name || 'মেস',
-          message: `সফলভাবে "${messRow.name}" মেসে যোগ দিয়েছেন!`,
-        });
-
-        setTimeout(() => {
-          onSuccess?.();
-          onClose();
-          setWelcomeMess(null);
-          setMessCode('');
-        }, 1600);
-        return;
-      }
-    } catch (err) {
-      console.warn('Supabase join query notice:', err);
-    }
-
-    // Fallback to local / sync search
-    const localResult = await joinMessByCode(cleanCode, userName.trim());
+    const result = await joinMessByCode(cleanCode, userName.trim());
     setLoading(false);
 
-    if (localResult.success) {
+    if (result.success) {
       setWelcomeMess({
-        name: localResult.messName || 'মেস',
-        message: localResult.message,
+        name: result.messName || 'মেস',
+        message: result.message,
       });
+
       setTimeout(() => {
         onSuccess?.();
         onClose();
@@ -96,7 +51,7 @@ export const JoinMessModal: React.FC<JoinMessModalProps> = ({ isOpen, onClose, o
         setMessCode('');
       }, 1600);
     } else {
-      setErrorMsg('ভুল মেস কোড! কোনো মেস খুঁজে পাওয়া যায়নি।');
+      setErrorMsg(result.message || 'ভুল মেস কোড! কোনো মেস খুঁজে পাওয়া যায়নি।');
     }
   };
 
@@ -179,7 +134,6 @@ export const JoinMessModal: React.FC<JoinMessModalProps> = ({ isOpen, onClose, o
                       onChange={(e) => setMessCode(e.target.value.toUpperCase())}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-base text-slate-900 font-black font-english uppercase tracking-widest outline-none focus:border-emerald-500 focus:bg-white transition-all pl-10"
                       required
-                      maxLength={12}
                     />
                     <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                   </div>
