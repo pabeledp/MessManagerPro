@@ -4,7 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMessStore, useMessCalculations } from '@/store/useMessStore';
 import { translations } from '@/lib/translations';
-import { X, ShoppingCart, CheckSquare, Square, Info } from 'lucide-react';
+import { CustomDropdown, DropdownOption } from '@/components/CustomDropdown';
+import { CustomDatePicker } from '@/components/CustomDatePicker';
+import { X, ShoppingCart, CheckSquare, Square } from 'lucide-react';
 
 interface AddBazarModalProps {
   isOpen: boolean;
@@ -13,13 +15,13 @@ interface AddBazarModalProps {
 }
 
 const CATEGORIES = [
-  '🛒 নিত্যপ্রয়োজনীয় বাজার (Groceries)',
-  '🐟 মাছ ও মাংস (Fish & Meat)',
-  '🥬 শাক-সবজি (Vegetables)',
-  '🛢️ তেল ও মশলা (Spices & Oil)',
-  '☕ চা ও নাস্তা (Snacks & Tea)',
-  '⚡ গ্যাস ও অন্যান্য (Utilities)',
-  '📦 অন্যান্য (Other)',
+  '🛒 নিত্যপ্রয়োজনীয় বাজার',
+  '🐟 মাছ ও মাংস',
+  '🥬 শাক-সবজি',
+  '🛢️ তেল ও মশলা',
+  '☕ চা ও নাস্তা',
+  '⚡ গ্যাস ও অন্যান্য',
+  '📦 অন্যান্য',
 ];
 
 export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, onSuccess }) => {
@@ -39,6 +41,17 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
       setSpentByMemberId(activeMembers[0].id);
     }
   }, [activeMembers, spentByMemberId]);
+
+  const memberOptions: DropdownOption[] = activeMembers.map((m) => ({
+    value: m.id,
+    label: m.name,
+    subLabel: `জমা: ৳${m.deposit}`,
+  }));
+
+  const categoryOptions: DropdownOption[] = CATEGORIES.map((c) => ({
+    value: c,
+    label: c,
+  }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +104,7 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
                 </div>
                 <div>
                   <h2 className="text-base sm:text-lg font-black text-slate-800 font-bangla">{t.modalAddBazarTitle}</h2>
-                  <p className="text-[10px] text-slate-400 font-bangla">{language === 'bn' ? 'দৈনিক বাজার খরচের হিসাব' : 'Daily Bazar Expense Entry'}</p>
+                  <p className="text-[10px] text-slate-400 font-bangla">{language === 'bn' ? 'দৈনিক বাজার খরচ' : 'Daily Bazar Entry'}</p>
                 </div>
               </div>
               <button
@@ -103,23 +116,14 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">
-                  {language === 'bn' ? 'কে বাজার করেছেন?' : 'Who did the bazar?'}
-                </label>
-                <select
-                  value={spentByMemberId}
-                  onChange={(e) => setSpentByMemberId(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 font-bangla"
-                  required
-                >
-                  {activeMembers.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Custom Member Dropdown */}
+              <CustomDropdown
+                label={language === 'bn' ? 'কে বাজার করেছেন?' : 'Who did the bazar?'}
+                options={memberOptions}
+                selectedValue={spentByMemberId}
+                onChange={setSpentByMemberId}
+                placeholder="মেম্বার নির্বাচন করুন"
+              />
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">
@@ -153,10 +157,7 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
                 )}
                 <div>
                   <p className="text-xs font-bold font-bangla">
-                    {language === 'bn' ? 'মেম্বার নিজের পকেট থেকে দিয়েছেন (জমার সাথে যোগ হবে)' : 'Paid from member pocket (Add to personal deposit)'}
-                  </p>
-                  <p className="text-[10px] text-slate-400 font-bangla">
-                    {language === 'bn' ? 'মেম্বারের মোট জমার পরিমাণ স্বয়ংক্রিয়ভাবে বৃদ্ধি পাবে' : 'Automatically increases the member total contribution'}
+                    {language === 'bn' ? 'মেম্বার নিজের পকেট থেকে দিয়েছেন (জমার সাথে যুক্ত হবে)' : 'Paid from member pocket (Add to personal deposit)'}
                   </p>
                 </div>
               </button>
@@ -172,31 +173,21 @@ export const AddBazarModal: React.FC<AddBazarModalProps> = ({ isOpen, onClose, o
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">{t.category}</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-bangla"
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Custom Category Dropdown */}
+                <CustomDropdown
+                  label={t.category}
+                  options={categoryOptions}
+                  selectedValue={category}
+                  onChange={setCategory}
+                />
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">{t.date}</label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-english"
-                  />
-                </div>
+                {/* In-Theme Custom Date Picker */}
+                <CustomDatePicker
+                  label={t.date}
+                  value={date}
+                  onChange={setDate}
+                />
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2">

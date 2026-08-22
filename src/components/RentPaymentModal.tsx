@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMessStore, useMessCalculations } from '@/store/useMessStore';
 import { translations } from '@/lib/translations';
-import { X, Home, CheckCircle2 } from 'lucide-react';
+import { CustomDropdown, DropdownOption } from '@/components/CustomDropdown';
+import { X, Home } from 'lucide-react';
 
 interface RentPaymentModalProps {
   isOpen: boolean;
@@ -14,7 +15,12 @@ interface RentPaymentModalProps {
   onSuccess?: () => void;
 }
 
-const PAYMENT_METHODS = ['bKash', 'Nagad', 'Cash', 'Bank Transfer'];
+const PAYMENT_METHODS: DropdownOption[] = [
+  { value: 'bKash', label: '📱 বিকাশ (bKash)', subLabel: 'Mobile Banking' },
+  { value: 'Nagad', label: '📱 নগদ (Nagad)', subLabel: 'Mobile Banking' },
+  { value: 'Cash', label: '💵 ক্যাশ টাকা (Cash in Hand)', subLabel: 'Direct Cash' },
+  { value: 'Bank Transfer', label: '🏦 ব্যাংক ট্রান্সফার (Bank)', subLabel: 'Account Transfer' },
+];
 
 export const RentPaymentModal: React.FC<RentPaymentModalProps> = ({
   isOpen,
@@ -33,7 +39,6 @@ export const RentPaymentModal: React.FC<RentPaymentModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState('bKash');
   const [note, setNote] = useState('');
 
-  // Synchronize state whenever modal opens or props change
   useEffect(() => {
     if (!isOpen) return;
 
@@ -42,9 +47,9 @@ export const RentPaymentModal: React.FC<RentPaymentModalProps> = ({
 
     if (targetId && activeMessId) {
       const existing = rentPayments.find(
-        r => r.messId === activeMessId && r.memberId === targetId && r.month === month
+        (r) => r.messId === activeMessId && r.memberId === targetId && r.month === month
       );
-      const member = members.find(m => m.id === targetId);
+      const member = members.find((m) => m.id === targetId);
 
       const expected = existing ? existing.expectedAmount : (member?.monthlyRent || 6000);
       const paid = existing ? existing.paidAmount : 0;
@@ -60,9 +65,9 @@ export const RentPaymentModal: React.FC<RentPaymentModalProps> = ({
     setSelectedMemberId(id);
     if (activeMessId) {
       const existing = rentPayments.find(
-        r => r.messId === activeMessId && r.memberId === id && r.month === month
+        (r) => r.messId === activeMessId && r.memberId === id && r.month === month
       );
-      const member = members.find(m => m.id === id);
+      const member = members.find((m) => m.id === id);
 
       const expected = existing ? existing.expectedAmount : (member?.monthlyRent || 6000);
       const paid = existing ? existing.paidAmount : 0;
@@ -73,6 +78,12 @@ export const RentPaymentModal: React.FC<RentPaymentModalProps> = ({
       setNote(existing?.note || '');
     }
   };
+
+  const memberOptions: DropdownOption[] = activeMembers.map((m) => ({
+    value: m.id,
+    label: m.name,
+    subLabel: `ভাড়া: ৳${m.monthlyRent || 6000}`,
+  }));
 
   const handleMarkFullPaid = () => {
     setPaidAmount(expectedAmount);
@@ -139,21 +150,13 @@ export const RentPaymentModal: React.FC<RentPaymentModalProps> = ({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">{t.selectMember}</label>
-                <select
-                  value={selectedMemberId}
-                  onChange={(e) => handleMemberChange(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 font-bangla outline-none focus:border-emerald-500 focus:bg-white transition-all"
-                  required
-                >
-                  {activeMembers.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Custom Member Dropdown */}
+              <CustomDropdown
+                label={t.selectMember}
+                options={memberOptions}
+                selectedValue={selectedMemberId}
+                onChange={handleMemberChange}
+              />
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
@@ -164,7 +167,7 @@ export const RentPaymentModal: React.FC<RentPaymentModalProps> = ({
                     type="number"
                     value={expectedAmount}
                     onChange={(e) => setExpectedAmount(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 font-extrabold font-english outline-none focus:border-emerald-500 focus:bg-white transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 font-extrabold font-english outline-none focus:border-emerald-500"
                     required
                     min="0"
                   />
@@ -187,36 +190,29 @@ export const RentPaymentModal: React.FC<RentPaymentModalProps> = ({
                     type="number"
                     value={paidAmount}
                     onChange={(e) => setPaidAmount(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 font-black font-english outline-none focus:border-emerald-500 focus:bg-white transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 font-black font-english outline-none focus:border-emerald-500"
                     required
                     min="0"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">{t.rentPaymentMethod}</label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 font-english outline-none focus:border-emerald-500 focus:bg-white transition-all"
-                >
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Custom Payment Method Dropdown */}
+              <CustomDropdown
+                label={t.rentPaymentMethod}
+                options={PAYMENT_METHODS}
+                selectedValue={paymentMethod}
+                onChange={setPaymentMethod}
+              />
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1 font-bangla">{t.rentNote}</label>
                 <input
                   type="text"
-                  placeholder="e.g. Paid on 5th via bKash"
+                  placeholder="e.g. Paid via bKash"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-emerald-500 focus:bg-white transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-emerald-500"
                 />
               </div>
 

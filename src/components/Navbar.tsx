@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMessStore } from '@/store/useMessStore';
 import { translations } from '@/lib/translations';
@@ -48,17 +49,24 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div
         className="glass-panel mx-auto max-w-lg md:max-w-5xl px-3.5 sm:px-5 py-2.5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between gap-2 bg-white"
       >
-        {/* Brand Logo & Name with Mint Green PRO Badge */}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center font-black text-base shadow-sm shrink-0 font-english">
-            ৳
+        {/* Brand Logo & Name with Uploaded 3D Icon */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-slate-900 overflow-hidden flex items-center justify-center p-0.5 shadow-sm shrink-0">
+            <Image
+              src="/icons/app-logo.png"
+              alt="MessManager PRO Logo"
+              width={36}
+              height={36}
+              className="w-full h-full object-contain rounded-lg"
+              priority
+            />
           </div>
 
           <div className="flex items-center gap-1.5">
             <span className="text-base font-black text-slate-800 tracking-tight font-english">
               {t.appName}
             </span>
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wider uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm font-english">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wider uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs font-english">
               {t.proBadge}
             </span>
           </div>
@@ -109,8 +117,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="absolute right-0 mt-2 w-64 bg-white rounded-2xl p-3 shadow-xl border border-slate-200 z-50"
                 >
                   <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 mb-2 flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center shrink-0">
-                      <User className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-xl bg-slate-900 overflow-hidden flex items-center justify-center p-0.5 shrink-0">
+                      <Image
+                        src="/icons/app-logo.png"
+                        alt="Logo"
+                        width={32}
+                        height={32}
+                        className="w-full h-full object-contain rounded-md"
+                      />
                     </div>
                     <div className="truncate">
                       <p className="text-xs font-extrabold text-slate-800 truncate font-bangla">
