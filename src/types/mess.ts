@@ -1,5 +1,7 @@
 export type Language = 'bn' | 'en';
 
+export type RoleType = 'MANAGER' | 'CO_MANAGER' | 'MEMBER';
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -8,12 +10,15 @@ export interface UserProfile {
   address?: string;
   activeMessId: string;
   language?: Language;
+  joinedMesses?: string[];
 }
 
 export interface Mess {
   id: string;
   name: string;
+  code: string; // e.g. "MESS-94A2"
   address?: string;
+  createdByUserId?: string;
   createdAt: string;
   monthlyHouseRent?: number;
 }
@@ -21,8 +26,10 @@ export interface Mess {
 export interface Member {
   id: string;
   messId: string;
+  userId?: string;
   name: string;
   phone?: string;
+  role: RoleType;
   deposit: number;
   monthlyRent?: number;
 }
@@ -79,6 +86,7 @@ export interface MemberCalculation {
   messId: string;
   name: string;
   phone?: string;
+  role: RoleType;
   deposit: number;
   monthlyRent?: number;
   totalMeals: number;
@@ -110,6 +118,9 @@ export interface RentSummary {
 
 export interface MessCalculations {
   activeMess: Mess | undefined;
+  currentUserRole: RoleType;
+  isManagerOrCoManager: boolean;
+  isOwnerManager: boolean;
   activeMembers: Member[];
   activeBazars: BazarEntry[];
   calculationMode: 'meal_rate' | 'equal_split';
@@ -140,10 +151,12 @@ export interface MessState extends MessData {
   setCalculationMode: (mode: 'meal_rate' | 'equal_split') => void;
   setActiveMessId: (messId: string) => void;
   createMess: (name: string, address?: string, initialMemberNames?: string[]) => string;
+  joinMessByCode: (code: string, userName?: string) => { success: boolean; message: string };
   updateMess: (messId: string, name: string, address?: string, monthlyHouseRent?: number) => void;
   deleteMess: (messId: string) => void;
   updateUserProfile: (profile: Partial<UserProfile>) => void;
-  addMember: (messId: string, name: string, deposit?: number, phone?: string, monthlyRent?: number) => void;
+  addMember: (messId: string, name: string, deposit?: number, phone?: string, monthlyRent?: number, role?: RoleType) => void;
+  updateMemberRole: (memberId: string, newRole: RoleType) => void;
   removeMember: (memberId: string) => void;
   addBazar: (entry: Omit<BazarEntry, 'id'>, addToMemberDeposit?: boolean) => void;
   deleteBazar: (id: string, deductFromMemberDeposit?: boolean) => void;

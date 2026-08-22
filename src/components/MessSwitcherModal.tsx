@@ -4,18 +4,20 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMessStore } from '@/store/useMessStore';
 import { translations } from '@/lib/translations';
-import { X, Building2, Check, Plus, MapPin } from 'lucide-react';
+import { X, Building2, Check, Plus, MapPin, LogIn, KeyRound } from 'lucide-react';
 
 interface MessSwitcherModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenCreateMess: () => void;
+  onOpenJoinMess: () => void;
 }
 
 export const MessSwitcherModal: React.FC<MessSwitcherModalProps> = ({
   isOpen,
   onClose,
   onOpenCreateMess,
+  onOpenJoinMess,
 }) => {
   const { messes, activeMessId, setActiveMessId, members, language } = useMessStore();
   const t = translations[language || 'bn'];
@@ -78,7 +80,7 @@ export const MessSwitcherModal: React.FC<MessSwitcherModalProps> = ({
                       setActiveMessId(m.id);
                       onClose();
                     }}
-                    className={`w-full flex items-center justify-between p-3 rounded-2xl text-left transition-all border ${
+                    className={`w-full flex items-center justify-between p-3 rounded-2xl text-left transition-all border cursor-pointer ${
                       isActive
                         ? 'bg-slate-900 text-white border-slate-900 shadow-md'
                         : 'bg-slate-50 text-slate-700 border-slate-200/70 hover:bg-slate-100'
@@ -104,6 +106,11 @@ export const MessSwitcherModal: React.FC<MessSwitcherModalProps> = ({
                           <span className={isActive ? 'text-emerald-400 font-bold' : 'text-slate-500 font-bold'}>
                             • {messMemberCount} {language === 'bn' ? 'জন মেম্বার' : 'members'}
                           </span>
+                          {m.code && (
+                            <span className={`font-english font-mono px-1 py-0.2 rounded text-[9px] ${isActive ? 'bg-white/15 text-slate-200' : 'bg-slate-200 text-slate-700'}`}>
+                              {m.code}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -118,17 +125,28 @@ export const MessSwitcherModal: React.FC<MessSwitcherModalProps> = ({
               })}
             </div>
 
-            {/* Bottom Create New Mess Button */}
-            <div className="pt-3 border-t border-slate-100 mt-2">
+            {/* Bottom Actions: 1) Create New Mess, 2) Join Mess by Code */}
+            <div className="pt-3 border-t border-slate-100 mt-2 space-y-2">
               <button
                 onClick={() => {
                   onClose();
                   onOpenCreateMess();
                 }}
-                className="w-full py-3 rounded-2xl text-xs font-black text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 flex items-center justify-center gap-1.5 transition-all active:scale-98 font-bangla shadow-xs"
+                className="w-full py-2.5 rounded-xl text-xs font-black text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 flex items-center justify-center gap-1.5 transition-all active:scale-98 font-bangla shadow-xs cursor-pointer"
               >
                 <Plus className="w-4 h-4 text-emerald-600" />
-                <span>{language === 'bn' ? '+ নতুন মেস বা বাসা যোগ করুন' : '+ Add New Mess'}</span>
+                <span>{language === 'bn' ? '+ নতুন মেস বা বাসা তৈরি করুন' : '+ Create New Mess'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenJoinMess();
+                }}
+                className="w-full py-2.5 rounded-xl text-xs font-black text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center justify-center gap-1.5 transition-all active:scale-98 font-bangla cursor-pointer"
+              >
+                <LogIn className="w-4 h-4 text-slate-600" />
+                <span>{language === 'bn' ? 'কোড দিয়ে মেসে যোগ দিন (Join Mess)' : 'Join Mess by Code'}</span>
               </button>
             </div>
           </motion.div>

@@ -2,9 +2,9 @@
 
 import React from 'react';
 import { MemberCalculation } from '@/types/mess';
-import { useMessStore } from '@/store/useMessStore';
+import { useMessStore, useMessCalculations } from '@/store/useMessStore';
 import { translations } from '@/lib/translations';
-import { Plus, Minus, ArrowUpRight, ArrowDownLeft, CheckCircle2, PiggyBank } from 'lucide-react';
+import { Plus, Minus, ArrowUpRight, ArrowDownLeft, CheckCircle2, PiggyBank, Crown, ShieldCheck, User } from 'lucide-react';
 
 interface MemberCardProps {
   calc: MemberCalculation;
@@ -13,6 +13,7 @@ interface MemberCardProps {
 
 export const MemberCard: React.FC<MemberCardProps> = ({ calc, onDepositClick }) => {
   const { incrementMeal, language, calculationMode } = useMessStore();
+  const { isManagerOrCoManager } = useMessCalculations();
   const t = translations[language || 'bn'];
   const today = new Date().toISOString().split('T')[0];
 
@@ -39,7 +40,20 @@ export const MemberCard: React.FC<MemberCardProps> = ({ calc, onDepositClick }) 
             {calc.name.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h3 className="font-extrabold text-slate-800 text-sm leading-tight font-bangla">{calc.name}</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="font-extrabold text-slate-800 text-sm leading-tight font-bangla">{calc.name}</h3>
+              {calc.role === 'MANAGER' ? (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-amber-50 text-amber-700 border border-amber-200 font-english">
+                  <Crown className="w-2.5 h-2.5 text-amber-600" />
+                  Manager
+                </span>
+              ) : calc.role === 'CO_MANAGER' ? (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-sky-50 text-sky-700 border border-sky-200 font-english">
+                  <ShieldCheck className="w-2.5 h-2.5 text-sky-600" />
+                  Co-Manager
+                </span>
+              ) : null}
+            </div>
             <p className="text-[11px] text-slate-500 mt-0.5 font-bangla">
               {calculationMode === 'meal_rate' ? (
                 <>
@@ -77,14 +91,20 @@ export const MemberCard: React.FC<MemberCardProps> = ({ calc, onDepositClick }) 
       <div className="bg-white rounded-xl p-2.5 border border-slate-100 mb-2.5 space-y-1 text-xs font-bangla">
         <div className="flex justify-between items-center">
           <span className="text-slate-500 font-medium">{language === 'bn' ? 'প্রদত্ত মোট জমা' : 'Total Deposit Paid'}</span>
-          <button
-            onClick={() => onDepositClick(calc.id)}
-            className="font-bold text-emerald-700 hover:underline font-english flex items-center gap-1"
-            title="Edit Deposit"
-          >
-            <PiggyBank className="w-3 h-3 text-emerald-600" />
-            <span>৳{calc.deposit}</span>
-          </button>
+          {isManagerOrCoManager ? (
+            <button
+              onClick={() => onDepositClick(calc.id)}
+              className="font-bold text-emerald-700 hover:underline font-english flex items-center gap-1 cursor-pointer"
+              title="Edit Deposit"
+            >
+              <PiggyBank className="w-3 h-3 text-emerald-600" />
+              <span>৳{calc.deposit}</span>
+            </button>
+          ) : (
+            <span className="font-bold text-slate-800 font-english flex items-center gap-1">
+              <span>৳{calc.deposit}</span>
+            </span>
+          )}
         </div>
         <div className="flex justify-between items-center">
           <span className="text-slate-500 font-medium">{language === 'bn' ? 'নিজের ভাগের খরচ' : 'Individual Cost Share'}</span>
@@ -92,38 +112,44 @@ export const MemberCard: React.FC<MemberCardProps> = ({ calc, onDepositClick }) 
         </div>
       </div>
 
-      {/* Bottom Row: 1-Tap Deposit Update and Meal Controls */}
-      <div className="flex items-center justify-between bg-slate-50 p-1.5 rounded-xl border border-slate-100 gap-2">
-        <button
-          onClick={() => onDepositClick(calc.id)}
-          className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 text-[10px] font-extrabold flex items-center gap-1 shadow-2xs font-bangla"
-        >
-          <Plus className="w-3 h-3 text-emerald-600" />
-          <span>{language === 'bn' ? 'জমা যোগ করুন' : 'Add Deposit'}</span>
-        </button>
+      {/* Bottom Row: 1-Tap Deposit Update and Meal Controls (Manager Only) */}
+      {isManagerOrCoManager ? (
+        <div className="flex items-center justify-between bg-slate-50 p-1.5 rounded-xl border border-slate-100 gap-2">
+          <button
+            onClick={() => onDepositClick(calc.id)}
+            className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 text-[10px] font-extrabold flex items-center gap-1 shadow-2xs font-bangla cursor-pointer"
+          >
+            <Plus className="w-3 h-3 text-emerald-600" />
+            <span>{language === 'bn' ? 'জমা যোগ করুন' : 'Add Deposit'}</span>
+          </button>
 
-        {calculationMode === 'meal_rate' && (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => incrementMeal(today, calc.messId, calc.id, 'lunch', -1)}
-              className="w-7 h-7 rounded-lg bg-white border border-slate-200 shadow-2xs flex items-center justify-center text-slate-700 hover:bg-slate-50 active:scale-90 transition-all font-bold"
-              title="Decrement 1 Meal"
-            >
-              <Minus className="w-3 h-3" />
-            </button>
-            <span className="text-[10px] font-bold text-slate-500 font-english px-1">
-              {calc.totalMeals}
-            </span>
-            <button
-              onClick={() => incrementMeal(today, calc.messId, calc.id, 'lunch', 1)}
-              className="w-7 h-7 rounded-lg bg-slate-900 text-white shadow-2xs flex items-center justify-center hover:bg-slate-800 active:scale-90 transition-all font-bold"
-              title="Increment 1 Meal"
-            >
-              <Plus className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-      </div>
+          {calculationMode === 'meal_rate' && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => incrementMeal(today, calc.messId, calc.id, 'lunch', -1)}
+                className="w-7 h-7 rounded-lg bg-white border border-slate-200 shadow-2xs flex items-center justify-center text-slate-700 hover:bg-slate-50 active:scale-90 transition-all font-bold cursor-pointer"
+                title="Decrement 1 Meal"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <span className="text-[10px] font-bold text-slate-500 font-english px-1">
+                {calc.totalMeals}
+              </span>
+              <button
+                onClick={() => incrementMeal(today, calc.messId, calc.id, 'lunch', 1)}
+                className="w-7 h-7 rounded-lg bg-slate-900 text-white shadow-2xs flex items-center justify-center hover:bg-slate-800 active:scale-90 transition-all font-bold cursor-pointer"
+                title="Increment 1 Meal"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100 text-center text-[10px] text-slate-400 font-bangla">
+          👁️ ভিউয়ার মোড (হিসাব শুধু দেখতে পারবেন)
+        </div>
+      )}
     </div>
   );
 };

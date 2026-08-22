@@ -18,6 +18,9 @@ import { CreateMessModal } from '@/components/CreateMessModal';
 import { MessSwitcherModal } from '@/components/MessSwitcherModal';
 import { RentPaymentModal } from '@/components/RentPaymentModal';
 import { ProfileModal } from '@/components/ProfileModal';
+import { InviteMemberModal } from '@/components/InviteMemberModal';
+import { JoinMessModal } from '@/components/JoinMessModal';
+import { PermissionGate } from '@/components/PermissionGate';
 import { restoreFromDrive, queueDriveSync } from '@/lib/driveSync';
 import {
   Plus,
@@ -32,8 +35,13 @@ import {
   Wallet,
   Home,
   UserPlus,
-  ChevronRight,
   ChevronUp,
+  Share2,
+  Crown,
+  ShieldCheck,
+  Eye,
+  KeyRound,
+  LogIn,
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -59,6 +67,9 @@ export default function Dashboard() {
 
   const {
     activeMess,
+    currentUserRole,
+    isManagerOrCoManager,
+    isOwnerManager,
     activeMembers,
     activeBazars,
     totalExpense,
@@ -75,6 +86,8 @@ export default function Dashboard() {
   const [isMessSwitcherOpen, setIsMessSwitcherOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isCreateMessModalOpen, setIsCreateMessModalOpen] = useState(false);
+  const [isJoinMessModalOpen, setIsJoinMessModalOpen] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isManageMembersModalOpen, setIsManageMembersModalOpen] = useState(false);
   const [isBazarModalOpen, setIsBazarModalOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
@@ -134,11 +147,13 @@ export default function Dashboard() {
   }
 
   const handleDepositClick = (memberId: string) => {
+    if (!isManagerOrCoManager) return;
     setSelectedMemberForDeposit(memberId);
     setIsDepositModalOpen(true);
   };
 
   const handleOpenRentModal = (memberId?: string, month?: string) => {
+    if (!isManagerOrCoManager) return;
     setSelectedMemberForRent(memberId);
     if (month) setSelectedRentMonth(month);
     setIsRentModalOpen(true);
@@ -157,13 +172,13 @@ export default function Dashboard() {
 
       <main className="max-w-lg md:max-w-5xl mx-auto px-3 sm:px-6 space-y-3.5 sm:space-y-4">
         
-        {/* CARD 1: ACTIVE MESS CARD */}
+        {/* CARD 1: ACTIVE MESS & ROLE STATUS CARD */}
         <div className="glass-panel rounded-2xl p-4 sm:p-5 relative bg-white border border-slate-200/80 shadow-sm">
           <div className="flex items-center justify-between gap-2 mb-3">
             {/* Active Mess with Modal Selector Button */}
             <button
               onClick={() => setIsMessSwitcherOpen(true)}
-              className="flex items-center gap-2.5 text-left group p-1 -ml-1 rounded-xl hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-2.5 text-left group p-1 -ml-1 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
             >
               <div className="w-8 h-8 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center font-bold shadow-sm shrink-0">
                 <Building2 className="w-4 h-4" />
@@ -175,43 +190,86 @@ export default function Dashboard() {
                   </h1>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 transition-colors" />
                 </div>
-                {activeMess?.address && (
-                  <p className="text-[10px] text-slate-400 font-bangla">{activeMess.address}</p>
-                )}
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {activeMess?.code && (
+                    <span className="text-[9px] font-mono font-bold bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded border border-slate-200">
+                      {activeMess.code}
+                    </span>
+                  )}
+                  {activeMess?.address && (
+                    <span className="text-[10px] text-slate-400 font-bangla truncate max-w-[120px] sm:max-w-[200px]">
+                      {activeMess.address}
+                    </span>
+                  )}
+                </div>
               </div>
             </button>
 
-            <button
-              onClick={() => setIsManageMembersModalOpen(true)}
-              className="flex items-center gap-1 bg-slate-50 hover:bg-slate-100 text-slate-700 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-slate-200 transition-all font-bangla active:scale-95"
-            >
-              <Users className="w-3.5 h-3.5 text-slate-500" />
-              <span>{activeMembers.length} {t.roommatesCount}</span>
-            </button>
+            {/* Quick Actions (Invite & Member Count) */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setIsInviteModalOpen(true)}
+                className="flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-xl text-[11px] font-extrabold border border-emerald-200 transition-all font-bangla active:scale-95 cursor-pointer shadow-2xs"
+                title="ইনভাইট লিংক ও মেস কোড"
+              >
+                <Share2 className="w-3 h-3 text-emerald-600" />
+                <span>ইনভাইট</span>
+              </button>
+
+              <button
+                onClick={() => setIsManageMembersModalOpen(true)}
+                className="flex items-center gap-1 bg-slate-50 hover:bg-slate-100 text-slate-700 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-slate-200 transition-all font-bangla active:scale-95 cursor-pointer"
+              >
+                <Users className="w-3.5 h-3.5 text-slate-500" />
+                <span>{activeMembers.length} {t.roommatesCount}</span>
+              </button>
+            </div>
           </div>
 
-          {/* Mode Switcher */}
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-            <span className="text-[11px] font-bold text-slate-500 font-bangla">{t.calcMode}</span>
+          {/* User Role Badge & Mode Switcher */}
+          <div className="flex items-center justify-between pt-2.5 border-t border-slate-100">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold text-slate-400 font-bangla">আপনার ক্ষমতা:</span>
+              {currentUserRole === 'MANAGER' ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-50 text-amber-800 border border-amber-200 font-english">
+                  <Crown className="w-2.5 h-2.5 text-amber-600" />
+                  Manager (Full Control)
+                </span>
+              ) : currentUserRole === 'CO_MANAGER' ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-sky-50 text-sky-800 border border-sky-200 font-english">
+                  <ShieldCheck className="w-2.5 h-2.5 text-sky-600" />
+                  Co-Manager (Editor)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-slate-100 text-slate-700 border border-slate-200 font-english">
+                  <Eye className="w-2.5 h-2.5 text-slate-500" />
+                  Member (View Only)
+                </span>
+              )}
+            </div>
+
+            {/* Mode Switcher */}
             <div className="flex items-center bg-slate-100 p-0.5 rounded-lg">
               <button
-                onClick={() => setCalculationMode('equal_split')}
+                onClick={() => isManagerOrCoManager && setCalculationMode('equal_split')}
+                disabled={!isManagerOrCoManager}
                 className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all font-bangla ${
                   calculationMode === 'equal_split'
                     ? 'bg-white text-slate-900 shadow-sm font-black'
                     : 'text-slate-500 hover:text-slate-800'
-                }`}
+                } ${!isManagerOrCoManager ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
               >
                 <Scale className="w-3 h-3" />
                 <span>{t.equalSplit}</span>
               </button>
               <button
-                onClick={() => setCalculationMode('meal_rate')}
+                onClick={() => isManagerOrCoManager && setCalculationMode('meal_rate')}
+                disabled={!isManagerOrCoManager}
                 className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all font-bangla ${
                   calculationMode === 'meal_rate'
                     ? 'bg-white text-slate-900 shadow-sm font-black'
                     : 'text-slate-500 hover:text-slate-800'
-                }`}
+                } ${!isManagerOrCoManager ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
               >
                 <Utensils className="w-3 h-3" />
                 <span>{t.mealRateMode}</span>
@@ -273,62 +331,82 @@ export default function Dashboard() {
         </div>
 
         {/* CARD 3: QUICK ACTION 4-TILE MOBILE GRID */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-          <button
-            onClick={() => setIsBazarModalOpen(true)}
-            className="p-3 sm:p-3.5 rounded-xl bg-slate-900 text-white shadow-sm hover:bg-slate-800 active:scale-95 transition-all text-left flex flex-col justify-between"
-          >
-            <div className="w-8 h-8 rounded-lg bg-white/10 text-emerald-400 flex items-center justify-center mb-2">
-              <Plus className="w-4 h-4 stroke-[3]" />
-            </div>
-            <div>
-              <p className="font-bold text-xs sm:text-sm font-bangla leading-tight">{t.addBazar}</p>
-              <span className="text-[9px] text-slate-400 font-bangla">{t.addBazarSub}</span>
-            </div>
-          </button>
+        {isManagerOrCoManager ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            <button
+              onClick={() => setIsBazarModalOpen(true)}
+              className="p-3 sm:p-3.5 rounded-xl bg-slate-900 text-white shadow-sm hover:bg-slate-800 active:scale-95 transition-all text-left flex flex-col justify-between cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-lg bg-white/10 text-emerald-400 flex items-center justify-center mb-2">
+                <Plus className="w-4 h-4 stroke-[3]" />
+              </div>
+              <div>
+                <p className="font-bold text-xs sm:text-sm font-bangla leading-tight">{t.addBazar}</p>
+                <span className="text-[9px] text-slate-400 font-bangla">{t.addBazarSub}</span>
+              </div>
+            </button>
 
-          <button
-            onClick={() => {
-              setSelectedMemberForDeposit(undefined);
-              setIsDepositModalOpen(true);
-            }}
-            className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-sm hover:bg-slate-50 active:scale-95 transition-all text-left flex flex-col justify-between"
-          >
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
-              <PiggyBank className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="font-bold text-xs sm:text-sm font-bangla leading-tight">{t.updateDeposit}</p>
-              <span className="text-[9px] text-slate-400 font-bangla">{t.updateDepositSub}</span>
-            </div>
-          </button>
+            <button
+              onClick={() => {
+                setSelectedMemberForDeposit(undefined);
+                setIsDepositModalOpen(true);
+              }}
+              className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-sm hover:bg-slate-50 active:scale-95 transition-all text-left flex flex-col justify-between cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
+                <PiggyBank className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="font-bold text-xs sm:text-sm font-bangla leading-tight">{t.updateDeposit}</p>
+                <span className="text-[9px] text-slate-400 font-bangla">{t.updateDepositSub}</span>
+              </div>
+            </button>
 
-          <button
-            onClick={() => setIsMealSheetOpen(true)}
-            className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-sm hover:bg-slate-50 active:scale-95 transition-all text-left flex flex-col justify-between"
-          >
-            <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center mb-2">
-              <Utensils className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="font-bold text-xs sm:text-sm font-bangla leading-tight">{t.mealSheet}</p>
-              <span className="text-[9px] text-slate-400 font-bangla">{t.mealSheetSub}</span>
-            </div>
-          </button>
+            <button
+              onClick={() => setIsMealSheetOpen(true)}
+              className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-sm hover:bg-slate-50 active:scale-95 transition-all text-left flex flex-col justify-between cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center mb-2">
+                <Utensils className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="font-bold text-xs sm:text-sm font-bangla leading-tight">{t.mealSheet}</p>
+                <span className="text-[9px] text-slate-400 font-bangla">{t.mealSheetSub}</span>
+              </div>
+            </button>
 
-          <button
-            onClick={() => handleOpenRentModal()}
-            className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-sm hover:bg-slate-50 active:scale-95 transition-all text-left flex flex-col justify-between"
-          >
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2">
-              <Home className="w-4 h-4" />
+            <button
+              onClick={() => handleOpenRentModal()}
+              className="p-3 sm:p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-sm hover:bg-slate-50 active:scale-95 transition-all text-left flex flex-col justify-between cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2">
+                <Home className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="font-bold text-xs sm:text-sm font-bangla leading-tight">{t.rentTrackerTitle}</p>
+                <span className="text-[9px] text-slate-400 font-bangla">{t.rentUpdateBtn}</span>
+              </div>
+            </button>
+          </div>
+        ) : (
+          <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                <Share2 className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-black text-emerald-900 font-bangla">মেস ইনভাইট লিংক ও কোড</p>
+                <p className="text-[10px] text-emerald-700 font-bangla">অন্য রুমমেটদের মেসে যুক্ত করতে কোড দিন</p>
+              </div>
             </div>
-            <div>
-              <p className="font-bold text-xs sm:text-sm font-bangla leading-tight">{t.rentTrackerTitle}</p>
-              <span className="text-[9px] text-slate-400 font-bangla">{t.rentUpdateBtn}</span>
-            </div>
-          </button>
-        </div>
+            <button
+              onClick={() => setIsInviteModalOpen(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-black font-bangla shadow-xs hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+            >
+              কোড দেখুন
+            </button>
+          </div>
+        )}
 
         {/* CARD 4: FAIR SHARE & PER-HEAD BALANCE CARD */}
         <AverageShareCard />
@@ -342,24 +420,28 @@ export default function Dashboard() {
             <h2 className="text-sm font-black text-slate-800 font-bangla">
               {t.members} ({activeMembers.length} {t.unitPerson})
             </h2>
-            <button
-              onClick={() => setIsManageMembersModalOpen(true)}
-              className="text-xs font-bold text-emerald-600 hover:underline font-bangla"
-            >
-              + {t.addNewMember}
-            </button>
+            {isManagerOrCoManager && (
+              <button
+                onClick={() => setIsManageMembersModalOpen(true)}
+                className="text-xs font-bold text-emerald-600 hover:underline font-bangla cursor-pointer"
+              >
+                + {t.addNewMember}
+              </button>
+            )}
           </div>
 
           {activeMembers.length === 0 ? (
             <div className="bg-white rounded-2xl p-6 text-center text-slate-400 text-xs font-bangla border border-slate-200/80 space-y-2">
               <p>{t.noMembersYet}</p>
-              <button
-                onClick={() => setIsManageMembersModalOpen(true)}
-                className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm"
-              >
-                <UserPlus className="w-3.5 h-3.5 text-emerald-400" />
-                <span>+ {t.addNewMember}</span>
-              </button>
+              {isManagerOrCoManager && (
+                <button
+                  onClick={() => setIsManageMembersModalOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <UserPlus className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>+ {t.addNewMember}</span>
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -414,13 +496,15 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className="font-black text-slate-800 font-english">৳{b.amount}</span>
-                      <button
-                        onClick={() => deleteBazar(b.id, true)}
-                        className="text-slate-300 hover:text-rose-500 p-1 rounded-lg transition-colors cursor-pointer"
-                        title={t.deleteAction}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {isManagerOrCoManager && (
+                        <button
+                          onClick={() => deleteBazar(b.id, true)}
+                          className="text-slate-300 hover:text-rose-500 p-1 rounded-lg transition-colors cursor-pointer"
+                          title={t.deleteAction}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -452,6 +536,18 @@ export default function Dashboard() {
           isOpen={isMessSwitcherOpen}
           onClose={() => setIsMessSwitcherOpen(false)}
           onOpenCreateMess={() => setIsCreateMessModalOpen(true)}
+          onOpenJoinMess={() => setIsJoinMessModalOpen(true)}
+        />
+
+        <InviteMemberModal
+          isOpen={isInviteModalOpen}
+          onClose={() => setIsInviteModalOpen(false)}
+        />
+
+        <JoinMessModal
+          isOpen={isJoinMessModalOpen}
+          onClose={() => setIsJoinMessModalOpen(false)}
+          onSuccess={triggerSync}
         />
 
         <ProfileModal
@@ -469,6 +565,7 @@ export default function Dashboard() {
         <ManageMembersModal
           isOpen={isManageMembersModalOpen}
           onClose={() => setIsManageMembersModalOpen(false)}
+          onOpenInvite={() => setIsInviteModalOpen(true)}
           onSuccess={triggerSync}
         />
 
@@ -509,6 +606,7 @@ export default function Dashboard() {
         }}
         onOpenMealSheet={() => setIsMealSheetOpen(true)}
         onOpenMembers={() => setIsManageMembersModalOpen(true)}
+        onOpenInvite={() => setIsInviteModalOpen(true)}
       />
     </div>
   );

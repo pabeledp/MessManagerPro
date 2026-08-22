@@ -14,6 +14,7 @@ import {
   MessCalculations,
   MemberCalculation,
   RentSummary,
+  RoleType,
 } from '@/types/mess';
 
 const AVATAR_COLORS = [
@@ -22,6 +23,15 @@ const AVATAR_COLORS = [
 ];
 
 const DEFAULT_MESS_ID = 'mess_1';
+
+export function generateMessCode(): string {
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let code = '';
+  for (let i = 0; i < 4; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `MESS-${code}`;
+}
 
 export const useMessStore = create<MessState>()(
   persist(
@@ -34,12 +44,15 @@ export const useMessStore = create<MessState>()(
         address: '',
         activeMessId: DEFAULT_MESS_ID,
         language: 'bn',
+        joinedMesses: [DEFAULT_MESS_ID],
       },
       messes: [
         {
           id: DEFAULT_MESS_ID,
           name: 'আমার মেস',
+          code: 'MESS-8X29',
           address: '',
+          createdByUserId: 'user_1',
           monthlyHouseRent: 0,
           createdAt: new Date().toISOString(),
         },
@@ -75,33 +88,112 @@ export const useMessStore = create<MessState>()(
 
       createMess: (name: string, address?: string, initialMemberNames: string[] = []) => {
         const newMessId = `mess_${Date.now()}`;
+        const newCode = generateMessCode();
+        const state = get();
+        const currentUserId = state.userProfile.id || 'user_1';
+        const currentUserName = state.userProfile.name || 'ম্যানেজার';
+
         const newMess: Mess = {
           id: newMessId,
           name: name.trim() || 'নতুন মেস',
+          code: newCode,
           address: address?.trim() || '',
+          createdByUserId: currentUserId,
           monthlyHouseRent: 0,
           createdAt: new Date().toISOString(),
         };
 
-        const newMembers: Member[] = initialMemberNames
+        // Current user automatically becomes the MANAGER of the new mess
+        const ownerMember: Member = {
+          id: `mem_${Date.now()}_owner`,
+          messId: newMessId,
+          userId: currentUserId,
+          name: currentUserName,
+          role: 'MANAGER',
+          deposit: 0,
+          monthlyRent: 0,
+        };
+
+        const otherMembers: Member[] = initialMemberNames
           .filter(n => n.trim().length > 0)
           .map((n, i) => ({
             id: `mem_${Date.now()}_${i}`,
             messId: newMessId,
             name: n.trim(),
+            role: 'MEMBER' as RoleType,
             deposit: 0,
             monthlyRent: 0,
           }));
 
-        set(state => ({
-          messes: [...state.messes, newMess],
+        set(s => ({
+          messes: [...s.messes, newMess],
           activeMessId: newMessId,
-          userProfile: { ...state.userProfile, activeMessId: newMessId },
-          members: [...state.members, ...newMembers],
+          userProfile: {
+            ...s.userProfile,
+            activeMessId: newMessId,
+            joinedMesses: [...(s.userProfile.joinedMesses || []), newMessId],
+          },
+          members: [...s.members, ownerMember, ...otherMembers],
           isSetupComplete: true,
         }));
 
         return newMessId;
+      },
+
+      joinMessByCode: (code: string, userName?: string) => {
+        const cleanCode = code.trim().toUpperCase();
+        const state = get();
+        const targetMess = state.messes.find(
+          m => (m.code && m.code.toUpperCase() === cleanCode) || m.id.toUpperCase() === cleanCode
+        );
+
+        if (!targetMess) {
+          return { success: false, message: 'ভুল মেস কোড! কোনো মেস খুঁজে পাওয়া যায়নি।' };
+        }
+
+        const currentUserId = state.userProfile.id || 'user_1';
+        const nameToUse = userName?.trim() || state.userProfile.name || 'নতুন সদস্য';
+
+        // Check if member already exists in this mess
+        const existingMember = state.members.find(
+          m => m.messId === targetMess.id && (m.userId === currentUserId || m.name.toLowerCase() === nameToUse.toLowerCase())
+        );
+
+        if (existingMember) {
+          // Switch to this mess
+          set(s => ({
+            activeMessId: targetMess.id,
+            userProfile: {
+              ...s.userProfile,
+              activeMessId: targetMess.id,
+              joinedMesses: Array.from(new Set([...(s.userProfile.joinedMesses || []), targetMess.id])),
+            },
+          }));
+          return { success: true, message: `সফলভাবে "${targetMess.name}" মেসে যোগ দিয়েছেন!` };
+        }
+
+        // Add as a new MEMBER (Viewer/General)
+        const newMember: Member = {
+          id: `mem_${Date.now()}`,
+          messId: targetMess.id,
+          userId: currentUserId,
+          name: nameToUse,
+          role: 'MEMBER',
+          deposit: 0,
+          monthlyRent: 0,
+        };
+
+        set(s => ({
+          activeMessId: targetMess.id,
+          members: [...s.members, newMember],
+          userProfile: {
+            ...s.userProfile,
+            activeMessId: targetMess.id,
+            joinedMesses: Array.from(new Set([...(s.userProfile.joinedMesses || []), targetMess.id])),
+          },
+        }));
+
+        return { success: true, message: `সফলভাবে "${targetMess.name}" মেসে সদস্য হিসেবে যোগ দিয়েছেন!` };
       },
 
       updateMess: (messId: string, name: string, address?: string, monthlyHouseRent?: number) => {
@@ -144,17 +236,26 @@ export const useMessStore = create<MessState>()(
         }));
       },
 
-      addMember: (messId: string, name: string, deposit = 0, phone?: string, monthlyRent = 0) => {
+      addMember: (messId: string, name: string, deposit = 0, phone?: string, monthlyRent = 0, role: RoleType = 'MEMBER') => {
         if (!name.trim()) return;
         const newMember: Member = {
           id: `mem_${Date.now()}`,
           messId,
           name: name.trim(),
           phone: phone?.trim(),
+          role,
           deposit: Math.max(0, deposit),
           monthlyRent: Math.max(0, monthlyRent),
         };
         set(state => ({ members: [...state.members, newMember] }));
+      },
+
+      updateMemberRole: (memberId: string, newRole: RoleType) => {
+        set(state => ({
+          members: state.members.map(m =>
+            m.id === memberId ? { ...m, role: newRole } : m
+          ),
+        }));
       },
 
       removeMember: (memberId: string) => {
@@ -166,7 +267,7 @@ export const useMessStore = create<MessState>()(
         }));
       },
 
-      addBazar: (entry, addToMemberDeposit = true) => {
+      addBazar: (entry: Omit<BazarEntry, 'id'>, addToMemberDeposit = true) => {
         const newBazar: BazarEntry = {
           ...entry,
           id: `baz_${Date.now()}`,
@@ -301,11 +402,17 @@ export const useMessStore = create<MessState>()(
       hydrateFromRemote: (remoteData: Partial<MessData>) => {
         set(state => ({
           userProfile: remoteData.userProfile || state.userProfile,
-          messes: remoteData.messes || state.messes,
+          messes: (remoteData.messes || state.messes).map(m => ({
+            ...m,
+            code: m.code || generateMessCode(),
+          })),
           activeMessId: remoteData.activeMessId || state.activeMessId,
           calculationMode: remoteData.calculationMode || state.calculationMode,
           language: remoteData.language || state.language,
-          members: remoteData.members || state.members,
+          members: (remoteData.members || state.members).map(m => ({
+            ...m,
+            role: m.role || 'MEMBER',
+          })),
           bazars: remoteData.bazars || state.bazars,
           meals: remoteData.meals || state.meals,
           rentPayments: remoteData.rentPayments || state.rentPayments,
@@ -332,8 +439,19 @@ export const useMessStore = create<MessState>()(
             address: '',
             activeMessId: DEFAULT_MESS_ID,
             language: 'bn',
+            joinedMesses: [DEFAULT_MESS_ID],
           },
-          messes: [{ id: DEFAULT_MESS_ID, name: 'আমার মেস', address: '', monthlyHouseRent: 0, createdAt: new Date().toISOString() }],
+          messes: [
+            {
+              id: DEFAULT_MESS_ID,
+              name: 'আমার মেস',
+              code: 'MESS-8X29',
+              address: '',
+              createdByUserId: 'user_1',
+              monthlyHouseRent: 0,
+              createdAt: new Date().toISOString(),
+            },
+          ],
           activeMessId: DEFAULT_MESS_ID,
           members: [],
           bazars: [],
@@ -352,9 +470,9 @@ export const useMessStore = create<MessState>()(
   )
 );
 
-// Derived Isolated Calculations
+// Derived Isolated Calculations with Multi-Role Security
 export const useMessCalculations = (): MessCalculations => {
-  const { messes, activeMessId, members, bazars, meals, calculationMode } = useMessStore();
+  const { messes, activeMessId, members, bazars, meals, calculationMode, userProfile } = useMessStore();
 
   const activeMess = messes.find(m => m.id === activeMessId) || messes[0];
   const activeId = activeMess?.id || activeMessId;
@@ -363,6 +481,25 @@ export const useMessCalculations = (): MessCalculations => {
   const activeMembers = members.filter(m => m.messId === activeId);
   const activeBazars = bazars.filter(b => b.messId === activeId);
   const activeMeals = meals.filter(m => m.messId === activeId);
+
+  // Compute Current User's Active Role in this mess
+  const currentUserId = userProfile.id || 'user_1';
+  const isOwnerManager = Boolean(activeMess?.createdByUserId && activeMess.createdByUserId === currentUserId);
+  
+  const currentMemberRecord = activeMembers.find(
+    m => m.userId === currentUserId || m.name === userProfile.name
+  );
+
+  let currentUserRole: RoleType = 'MEMBER';
+  if (isOwnerManager) {
+    currentUserRole = 'MANAGER';
+  } else if (currentMemberRecord?.role) {
+    currentUserRole = currentMemberRecord.role;
+  } else if (activeMembers.length === 0) {
+    currentUserRole = 'MANAGER'; // Default to manager if empty
+  }
+
+  const isManagerOrCoManager = currentUserRole === 'MANAGER' || currentUserRole === 'CO_MANAGER';
 
   const totalExpense = activeBazars.reduce((sum, b) => sum + Number(b.amount || 0), 0);
   const totalDeposit = activeMembers.reduce((sum, m) => sum + Number(m.deposit || 0), 0);
@@ -379,7 +516,6 @@ export const useMessCalculations = (): MessCalculations => {
   const avgExpensePerHead = memberCount > 0 ? totalExpense / memberCount : 0;
   const avgDepositPerHead = memberCount > 0 ? totalDeposit / memberCount : 0;
 
-  // By default, if calculationMode is equal_split OR meals are not logged, use equal_split!
   const effectiveMode = (calculationMode === 'meal_rate' && totalMeals > 0) ? 'meal_rate' : 'equal_split';
 
   let totalDue = 0;
@@ -411,6 +547,7 @@ export const useMessCalculations = (): MessCalculations => {
       messId: member.messId,
       name: member.name,
       phone: member.phone,
+      role: member.role || 'MEMBER',
       deposit: Number(member.deposit || 0),
       monthlyRent: member.monthlyRent || 0,
       totalMeals: memberTotalMeals,
@@ -427,6 +564,9 @@ export const useMessCalculations = (): MessCalculations => {
 
   return {
     activeMess,
+    currentUserRole,
+    isManagerOrCoManager,
+    isOwnerManager,
     activeMembers,
     activeBazars,
     calculationMode: calculationMode || 'equal_split',
