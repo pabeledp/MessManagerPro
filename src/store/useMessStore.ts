@@ -16,6 +16,7 @@ import {
   RentSummary,
   RoleType,
 } from '@/types/mess';
+import { pushMessToSupabase, fetchRemoteMessData } from '@/lib/supabaseSync';
 
 const AVATAR_COLORS = [
   'bg-emerald-500', 'bg-sky-500', 'bg-indigo-500', 
@@ -86,7 +87,7 @@ export const useMessStore = create<MessState>()(
         }));
       },
 
-      createMess: (name: string, address?: string, initialMemberNames: string[] = []) => {
+      createMess: async (name: string, address?: string, initialMemberNames: string[] = []) => {
         const newMessId = `mess_${Date.now()}`;
         const newCode = generateMessCode();
         const state = get();
@@ -103,7 +104,6 @@ export const useMessStore = create<MessState>()(
           createdAt: new Date().toISOString(),
         };
 
-        // Current user automatically becomes the MANAGER of the new mess
         const ownerMember: Member = {
           id: `mem_${Date.now()}_owner`,
           messId: newMessId,
@@ -125,6 +125,8 @@ export const useMessStore = create<MessState>()(
             monthlyRent: 0,
           }));
 
+        const combinedMembers = [ownerMember, ...otherMembers];
+
         set(s => ({
           messes: [...s.messes, newMess],
           activeMessId: newMessId,
@@ -133,67 +135,137 @@ export const useMessStore = create<MessState>()(
             activeMessId: newMessId,
             joinedMesses: [...(s.userProfile.joinedMesses || []), newMessId],
           },
-          members: [...s.members, ownerMember, ...otherMembers],
+          members: [...s.members, ...combinedMembers],
           isSetupComplete: true,
         }));
+
+        // Push to Supabase Cloud in background
+        pushMessToSupabase(newMess, combinedMembers, [], [], []);
 
         return newMessId;
       },
 
-      joinMessByCode: (code: string, userName?: string) => {
+      joinMessByCode: async (code: string, userName?: string) => {
         const cleanCode = code.trim().toUpperCase();
         const state = get();
-        const targetMess = state.messes.find(
-          m => (m.code && m.code.toUpperCase() === cleanCode) || m.id.toUpperCase() === cleanCode
-        );
-
-        if (!targetMess) {
-          return { success: false, message: 'ভুল মেস কোড! কোনো মেস খুঁজে পাওয়া যায়নি।' };
-        }
-
         const currentUserId = state.userProfile.id || 'user_1';
         const nameToUse = userName?.trim() || state.userProfile.name || 'নতুন সদস্য';
 
-        // Check if member already exists in this mess
-        const existingMember = state.members.find(
-          m => m.messId === targetMess.id && (m.userId === currentUserId || m.name.toLowerCase() === nameToUse.toLowerCase())
+        // 1. First check local store
+        const localMess = state.messes.find(
+          m => (m.code && m.code.toUpperCase() === cleanCode) || m.id.toUpperCase() === cleanCode
         );
 
-        if (existingMember) {
-          // Switch to this mess
-          set(s => ({
-            activeMessId: targetMess.id,
-            userProfile: {
-              ...s.userProfile,
-              activeMessId: targetMess.id,
-              joinedMesses: Array.from(new Set([...(s.userProfile.joinedMesses || []), targetMess.id])),
-            },
-          }));
-          return { success: true, message: `সফলভাবে "${targetMess.name}" মেসে যোগ দিয়েছেন!` };
+        if (localMess) {
+          const existingMember = state.members.find(
+            m => m.messId === localMess.id && (m.userId === currentUserId || m.name.toLowerCase() === nameToUse.toLowerCase())
+          );
+
+          if (!existingMember) {
+            const newMember: Member = {
+              id: `mem_${Date.now()}`,
+              messId: localMess.id,
+              userId: currentUserId,
+              name: nameToUse,
+              role: 'MEMBER',
+              deposit: 0,
+              monthlyRent: 0,
+            };
+            set(s => ({
+              activeMessId: localMess.id,
+              members: [...s.members, newMember],
+              userProfile: {
+                ...s.userProfile,
+                activeMessId: localMess.id,
+                joinedMesses: Array.from(new Set([...(s.userProfile.joinedMesses || []), localMess.id])),
+              },
+            }));
+            pushMessToSupabase(localMess, [newMember], [], [], []);
+          } else {
+            set(s => ({
+              activeMessId: localMess.id,
+              userProfile: {
+                ...s.userProfile,
+                activeMessId: localMess.id,
+                joinedMesses: Array.from(new Set([...(s.userProfile.joinedMesses || []), localMess.id])),
+              },
+            }));
+          }
+
+          return {
+            success: true,
+            messName: localMess.name,
+            message: `সফলভাবে "${localMess.name}" মেসে যোগ দিয়েছেন!`,
+          };
         }
 
-        // Add as a new MEMBER (Viewer/General)
-        const newMember: Member = {
-          id: `mem_${Date.now()}`,
-          messId: targetMess.id,
-          userId: currentUserId,
-          name: nameToUse,
-          role: 'MEMBER',
-          deposit: 0,
-          monthlyRent: 0,
+        // 2. Query Supabase Cloud database
+        const remoteResult = await fetchRemoteMessData(cleanCode);
+        if (remoteResult.success && remoteResult.mess) {
+          const fetchedMess = remoteResult.mess;
+          const fetchedMembers = remoteResult.members || [];
+          const fetchedBazars = remoteResult.bazars || [];
+          const fetchedMeals = remoteResult.meals || [];
+          const fetchedRent = remoteResult.rentPayments || [];
+
+          // Add user if not in member list
+          const existingMem = fetchedMembers.find(
+            m => m.userId === currentUserId || m.name.toLowerCase() === nameToUse.toLowerCase()
+          );
+
+          let updatedMembers = fetchedMembers;
+          if (!existingMem) {
+            const newMember: Member = {
+              id: `mem_${Date.now()}`,
+              messId: fetchedMess.id,
+              userId: currentUserId,
+              name: nameToUse,
+              role: 'MEMBER',
+              deposit: 0,
+              monthlyRent: 0,
+            };
+            updatedMembers = [...fetchedMembers, newMember];
+            pushMessToSupabase(fetchedMess, [newMember], [], [], []);
+          }
+
+          set(s => ({
+            messes: [...s.messes.filter(m => m.id !== fetchedMess.id), fetchedMess],
+            activeMessId: fetchedMess.id,
+            userProfile: {
+              ...s.userProfile,
+              activeMessId: fetchedMess.id,
+              joinedMesses: Array.from(new Set([...(s.userProfile.joinedMesses || []), fetchedMess.id])),
+            },
+            members: [...s.members.filter(m => m.messId !== fetchedMess.id), ...updatedMembers],
+            bazars: [...s.bazars.filter(b => b.messId !== fetchedMess.id), ...fetchedBazars],
+            meals: [...s.meals.filter(m => m.messId !== fetchedMess.id), ...fetchedMeals],
+            rentPayments: [...s.rentPayments.filter(r => r.messId !== fetchedMess.id), ...fetchedRent],
+          }));
+
+          return {
+            success: true,
+            messName: fetchedMess.name,
+            message: `সফলভাবে "${fetchedMess.name}" মেসে যোগ দিয়েছেন!`,
+          };
+        }
+
+        return {
+          success: false,
+          message: 'ভুল মেস কোড! কোনো মেস খুঁজে পাওয়া যায়নি।',
         };
+      },
 
-        set(s => ({
-          activeMessId: targetMess.id,
-          members: [...s.members, newMember],
-          userProfile: {
-            ...s.userProfile,
-            activeMessId: targetMess.id,
-            joinedMesses: Array.from(new Set([...(s.userProfile.joinedMesses || []), targetMess.id])),
-          },
-        }));
+      syncCurrentMessWithSupabase: async () => {
+        const state = get();
+        const activeMess = state.messes.find(m => m.id === state.activeMessId);
+        if (!activeMess) return;
 
-        return { success: true, message: `সফলভাবে "${targetMess.name}" মেসে সদস্য হিসেবে যোগ দিয়েছেন!` };
+        const activeMembers = state.members.filter(m => m.messId === activeMess.id);
+        const activeBazars = state.bazars.filter(b => b.messId === activeMess.id);
+        const activeMeals = state.meals.filter(m => m.messId === activeMess.id);
+        const activeRent = state.rentPayments.filter(r => r.messId === activeMess.id);
+
+        await pushMessToSupabase(activeMess, activeMembers, activeBazars, activeMeals, activeRent);
       },
 
       updateMess: (messId: string, name: string, address?: string, monthlyHouseRent?: number) => {
@@ -248,6 +320,12 @@ export const useMessStore = create<MessState>()(
           monthlyRent: Math.max(0, monthlyRent),
         };
         set(state => ({ members: [...state.members, newMember] }));
+        
+        const state = get();
+        const currentMess = state.messes.find(m => m.id === messId);
+        if (currentMess) {
+          pushMessToSupabase(currentMess, [newMember], [], [], []);
+        }
       },
 
       updateMemberRole: (memberId: string, newRole: RoleType) => {
@@ -287,6 +365,12 @@ export const useMessStore = create<MessState>()(
             members: updatedMembers,
           };
         });
+
+        const state = get();
+        const currentMess = state.messes.find(m => m.id === entry.messId);
+        if (currentMess) {
+          pushMessToSupabase(currentMess, state.members, [newBazar], [], []);
+        }
       },
 
       deleteBazar: (id: string, deductFromMemberDeposit = true) => {
@@ -470,7 +554,7 @@ export const useMessStore = create<MessState>()(
   )
 );
 
-// Derived Isolated Calculations with Multi-Role Security
+// Derived Isolated Calculations
 export const useMessCalculations = (): MessCalculations => {
   const { messes, activeMessId, members, bazars, meals, calculationMode, userProfile } = useMessStore();
 
@@ -496,7 +580,7 @@ export const useMessCalculations = (): MessCalculations => {
   } else if (currentMemberRecord?.role) {
     currentUserRole = currentMemberRecord.role;
   } else if (activeMembers.length === 0) {
-    currentUserRole = 'MANAGER'; // Default to manager if empty
+    currentUserRole = 'MANAGER';
   }
 
   const isManagerOrCoManager = currentUserRole === 'MANAGER' || currentUserRole === 'CO_MANAGER';

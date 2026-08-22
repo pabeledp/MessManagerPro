@@ -150,8 +150,8 @@ export interface MessState extends MessData {
   setLanguage: (lang: Language) => void;
   setCalculationMode: (mode: 'meal_rate' | 'equal_split') => void;
   setActiveMessId: (messId: string) => void;
-  createMess: (name: string, address?: string, initialMemberNames?: string[]) => string;
-  joinMessByCode: (code: string, userName?: string) => { success: boolean; message: string };
+  createMess: (name: string, address?: string, initialMemberNames?: string[]) => Promise<string>;
+  joinMessByCode: (code: string, userName?: string) => Promise<{ success: boolean; message: string; messName?: string }>;
   updateMess: (messId: string, name: string, address?: string, monthlyHouseRent?: number) => void;
   deleteMess: (messId: string) => void;
   updateUserProfile: (profile: Partial<UserProfile>) => void;
@@ -175,6 +175,7 @@ export interface MessState extends MessData {
   ) => void;
   setMemberMonthlyRent: (memberId: string, rentAmount: number) => void;
 
+  syncCurrentMessWithSupabase: () => Promise<void>;
   hydrateFromRemote: (remoteData: Partial<MessData>) => void;
   setSyncStatus: (status: SyncStatus) => void;
   resetAllData: () => void;

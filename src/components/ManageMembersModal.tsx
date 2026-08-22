@@ -110,6 +110,7 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
             className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
           />
@@ -118,7 +119,7 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
             initial={{ y: '100%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 350, mass: 0.8 }}
             className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl z-10 border border-slate-200/80 max-h-[92vh] overflow-y-auto"
           >
             <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-3 sm:hidden" />
@@ -160,71 +161,67 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
               </div>
             </div>
 
-            {/* Add Member Form (Manager Only) */}
-            {isManagerOrCoManager && (
-              <form onSubmit={handleAddMember} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 mb-4 space-y-2.5">
-                <div className="flex items-center justify-between text-xs font-extrabold text-slate-700 font-bangla">
-                  <div className="flex items-center gap-1.5">
-                    <UserPlus className="w-4 h-4 text-emerald-600" />
-                    <span>{t.addNewMember}</span>
-                  </div>
-                  {isOwnerManager && (
-                    <div className="flex items-center gap-1 text-[10px] text-slate-500 font-bangla">
-                      <span>রোল:</span>
-                      <select
-                        value={selectedRole}
-                        onChange={(e) => setSelectedRole(e.target.value as RoleType)}
-                        className="bg-white border border-slate-200 rounded px-1.5 py-0.5 font-english font-bold text-slate-800 outline-none"
-                      >
-                        <option value="MEMBER">Member (Viewer)</option>
-                        <option value="CO_MANAGER">Co-Manager</option>
-                      </select>
-                    </div>
-                  )}
+            {/* Add Member Form */}
+            <form onSubmit={handleAddMember} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 mb-4 space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-extrabold text-slate-700 font-bangla">
+                <div className="flex items-center gap-1.5">
+                  <UserPlus className="w-4 h-4 text-emerald-600" />
+                  <span>{t.addNewMember}</span>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div>
-                    <input
-                      type="text"
-                      placeholder={t.nameRequired}
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 font-bangla outline-none focus:border-emerald-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="tel"
-                      placeholder={t.phoneOptional}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-semibold font-english outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="number"
-                      placeholder={t.initialDeposit}
-                      value={deposit}
-                      onChange={(e) => setDeposit(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-bold font-english outline-none focus:border-emerald-500"
-                      min="0"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-0.5">
-                  <button
-                    type="submit"
-                    className="w-full sm:w-auto px-5 py-2 rounded-xl text-xs font-extrabold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all font-bangla cursor-pointer"
+                <div className="flex items-center gap-1 text-[10px] text-slate-500 font-bangla">
+                  <span>রোল:</span>
+                  <select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value as RoleType)}
+                    className="bg-white border border-slate-200 rounded px-1.5 py-0.5 font-english font-bold text-slate-800 outline-none"
                   >
-                    {t.addMemberBtn}
-                  </button>
+                    <option value="MEMBER">Member</option>
+                    <option value="CO_MANAGER">Co-Manager</option>
+                  </select>
                 </div>
-              </form>
-            )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <input
+                    type="text"
+                    placeholder={t.nameRequired}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 font-bangla outline-none focus:border-emerald-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    type="tel"
+                    placeholder={t.phoneOptional}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-semibold font-english outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    placeholder={t.initialDeposit}
+                    value={deposit}
+                    onChange={(e) => setDeposit(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-bold font-english outline-none focus:border-emerald-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-0.5">
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-5 py-2 rounded-xl text-xs font-extrabold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 shadow-sm transition-all font-bangla cursor-pointer"
+                >
+                  {t.addMemberBtn}
+                </button>
+              </div>
+            </form>
 
             {/* Existing Members List */}
             <div>
@@ -261,7 +258,7 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
 
                       {/* Actions Menu */}
                       <div className="flex items-center gap-1 shrink-0">
-                        {isOwnerManager && member.role !== 'MANAGER' && (
+                        {member.role !== 'MANAGER' && (
                           <div className="relative">
                             <button
                               type="button"
@@ -281,14 +278,14 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
                                 {member.role === 'CO_MANAGER' ? (
                                   <button
                                     onClick={() => handleRoleChange(member.id, 'MEMBER')}
-                                    className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-slate-700 transition-colors"
+                                    className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer"
                                   >
                                     সাধারণ মেম্বার করুন
                                   </button>
                                 ) : (
                                   <button
                                     onClick={() => handleRoleChange(member.id, 'CO_MANAGER')}
-                                    className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-sky-50 text-sky-700 transition-colors"
+                                    className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-sky-50 text-sky-700 transition-colors cursor-pointer"
                                   >
                                     কো-ম্যানেজার বানান
                                   </button>
@@ -298,7 +295,7 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
                           </div>
                         )}
 
-                        {isManagerOrCoManager && member.role !== 'MANAGER' && (
+                        {member.role !== 'MANAGER' && (
                           <button
                             type="button"
                             onClick={() => setMemberToDelete({ id: member.id, name: member.name })}
@@ -323,6 +320,7 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
+                    transition={{ duration: 0.15 }}
                     className="max-w-sm w-full p-5 rounded-3xl border border-slate-200 bg-white shadow-2xl text-center space-y-3"
                   >
                     <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 mx-auto flex items-center justify-center">
